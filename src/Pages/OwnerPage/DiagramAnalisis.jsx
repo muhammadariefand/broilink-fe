@@ -162,11 +162,24 @@ const DiagramAnalisis = () => {
 
   const handleExportExcel = async () => {
     try {
-      const response = await ownerService.exportData(selectedFarmId);
+      // Map timeRange to backend period format
+      const periodMap = {
+        '1 Hari Terakhir': '7days',
+        '7 Hari Terakhir': '7days',
+        '1 Minggu Terakhir': '7days',
+        '30 Hari Terakhir': '30days',
+        '1 Bulan Terakhir': '30days',
+        '3 Bulan Terakhir': '90days',
+        '6 Bulan Terakhir': '180days'
+      };
+
+      const period = periodMap[filters.timeRange] || '30days';
+
+      const response = await ownerService.exportData(selectedFarmId, { period, type: 'manual' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `data-kandang-${selectedFarmId}.csv`);
+      link.setAttribute('download', `data-kandang-${selectedFarmId}-${period}.csv`);
       document.body.appendChild(link);
       link.click();
       link.remove();

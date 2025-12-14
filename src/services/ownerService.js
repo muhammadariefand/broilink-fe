@@ -62,10 +62,12 @@ const ownerService = {
 
   /**
    * Export farm data to CSV
+   * @param {number} farmId - Farm ID
+   * @param {object} params - Export parameters (period, type)
    */
-  exportData: (farmId) => {
+  exportData: (farmId, params = {}) => {
     return axiosInstance.get(`/owner/export/${farmId}`, {
-      params: { format: 'csv' },
+      params: { ...params, format: 'csv' },
       responseType: 'blob'
     });
   },

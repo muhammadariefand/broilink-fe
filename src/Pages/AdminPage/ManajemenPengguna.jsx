@@ -507,20 +507,47 @@ const ManajemenPengguna = () => {
                 </div>
 
                 <div className="flex items-center justify-center gap-2 mt-6">
+                  {/* Previous Button */}
                   <button
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                    className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors disabled:text-gray-300 disabled:cursor-not-allowed"
+                    title="Previous"
                   >
-                    {currentPage}
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
                   </button>
+
+                  {/* Page Numbers */}
+                  {(() => {
+                    const totalPages = Math.ceil(users.length / 5);
+                    const pages = [];
+                    for (let i = 1; i <= Math.min(5, totalPages); i++) {
+                      pages.push(
+                        <button
+                          key={i}
+                          onClick={() => setCurrentPage(i)}
+                          className={`px-4 py-2 rounded-lg transition-colors ${
+                            currentPage === i
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {i}
+                        </button>
+                      );
+                    }
+                    return pages;
+                  })()}
+
+                  {/* Next Button */}
                   <button
                     onClick={() => setCurrentPage(p => p + 1)}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                    disabled={currentPage >= Math.ceil(users.length / 5)}
+                    className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors disabled:text-gray-300 disabled:cursor-not-allowed"
+                    title="Next"
                   >
-                    {currentPage + 1}
-                  </button>
-                  <button className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
