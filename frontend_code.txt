@@ -1,0 +1,2615 @@
+==================================================
+FILE: src/Pages/AdminPage/DashboardAdmin.jsx
+==================================================
+
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import axiosInstance from "../../utils/axios";
+import NavbarAdmin from '../../components/NavbarAdmin';
+import SidebarAdmin from '../../components/SidebarAdmin';
+
+const DashboardAdmin = () => {
+  console.log('Dashboard rendered!');
+  const [stats, setStats] = useState({
+    total_owners: 0,
+    total_peternak: 0,
+    pending_request: 0,
+    recent_request: [],
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      const response = await axiosInstance.get('/api/admin/dashboard');
+      console.log('Response dari backend:', response.data);
+      setStats(response.data.data);
+    } catch (error) {
+      console.error('Error fetching dashboard:', error.response || error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const StatCard = ({ title, value, color = 'blue' }) => (
+    <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+      <h3 className="text-sm font-medium text-gray-600 mb-3 text-center">{title}</h3>
+      <p className={`text-4xl font-bold text-${color}-500 text-center`}>{value}</p>
+    </div>
+  );
+
+  const RequestCard = ({ request }) => {
+    const roleName = (request.user && request.user.role ? request.user.role.name : request.role) || 'Guest';
+        let userName = (request.user ? request.user.name : request.name); 
+        if (!userName) { // Jika nama kosong
+      if (roleName === 'Guest') {
+        userName = 'Guest'; // Fallback khusus Guest
+      } else {
+        userName = 'Nama Tidak Tersedia'; // Fallback lain
+      }
+    }
+    const displayTime = request.created_at || 'undefined';
+
+    return (
+      <div className="bg-white rounded-xl p-5 border border-gray-200 shadow hover:shadow-lg transition-all">
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0">
+            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+              <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-semibold text-gray-900">{userName}</h4>
+              <span className="text-xs text-gray-500">{roleName}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+                <span>{displayTime}</span>
+            </div>
+            <p className="text-sm text-gray-700">{request.type}</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <NavbarAdmin />
+        <SidebarAdmin />
+        <main className="ml-48 pt-24 px-8 py-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <NavbarAdmin />
+      <SidebarAdmin />
+      <main className="ml-48 pt-24">
+        <div className="max-w-7xl mx-auto px-8 py-8 space-y-8">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-3 gap-8">
+            <StatCard title="Total Pengguna Owner" value={stats.total_owners} color="blue" />
+            <StatCard title="Total Pengguna Peternak" value={stats.total_peternak} color="blue" />
+            <StatCard title="Total Laporan Guest" value={stats.pending_requests} color="blue" />
+          </div>
+
+          {/* Recent Requests */}
+          <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-md">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Permintaan Terbaru</h2>
+              <Link
+                to="/riwayat-laporan"
+                className="text-blue-500 hover:text-blue-600 text-sm font-medium flex items-center gap-1"
+              >
+                Lihat Semua Laporan
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+
+            {stats.recent_requests.length > 0 ? (
+              <div className="grid grid-cols-3 gap-6">
+                {stats.recent_requests.slice(0, 3).map((request, index) => (
+                  <RequestCard key={request.id || index} request={request} /> 
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-gray-500">
+                <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                </svg>
+                <p>Belum ada permintaan terbaru</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default DashboardAdmin;
+
+
+==================================================
+FILE: src/Pages/AdminPage/ManajemenPengguna.jsx
+==================================================
+
+import React, { useState, useEffect } from 'react';
+import axiosInstance from "../../utils/axios";
+import NavbarAdmin from '../../components/NavbarAdmin'; // ⬅️ Naik 2 level (..)
+import SidebarAdmin from '../../components/SidebarAdmin';
+
+const ManajemenPengguna = () => {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState(''); // 'add', 'edit', 'delete'
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [stats, setStats] = useState({ total: 0, owner: 0, peternak: 0 });
+
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role_id: '',
+    phone: '',
+    farm_id: '',
+  });
+
+  useEffect(() => {
+    fetchUsers();
+  }, [currentPage]);
+
+  const fetchUsers = async () => {
+  try {
+    setLoading(true);
+    const response = await axiosInstance.get('/api/admin/users', {  // ⬅️ Pakai axiosInstance
+      params: { page: currentPage }
+    });
+    console.log('Response users:', response.data);
+    
+    // ⬅️ FIX: Sama kayak Dashboard
+    const data = response.data.data;
+    setUsers(data.users || []);
+    setStats(data.stats || { total: 0, owner: 0, peternak: 0 });
+  } catch (error) {
+    console.error('Error fetching users:', error.response || error.message);
+    setUsers([]);
+    setStats({ total: 0, owner: 0, peternak: 0 });
+  } finally {
+    setLoading(false);
+  }
+};
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      fetchUsers();
+      return;
+    }
+    try {
+      const response = await axios.get('/api/admin/users/search', {
+        params: { query: searchQuery }
+      });
+      console.log('Search response:', response.data);
+      setUsers(response.data.data || []);
+    } catch (error) {
+      console.error('Error searching users:', error.response || error.message);
+      setUsers([]);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (modalType === 'add') {
+        await axios.post('/api/admin/users', formData);
+      } else if (modalType === 'edit') {
+        await axios.put(`/api/admin/users/${selectedUser.id}`, formData);
+      }
+      setShowModal(false);
+      fetchUsers();
+      resetForm();
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert(error.response?.data?.message || 'Terjadi kesalahan');
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await axios.delete(`/api/admin/users/${selectedUser.id}`);
+      setShowModal(false);
+      fetchUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert(error.response?.data?.message || 'Terjadi kesalahan');
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      email: '',
+      password: '',
+      role_id: '',
+      phone: '',
+      farm_id: '',
+    });
+    setSelectedUser(null);
+  };
+
+  const openModal = (type, user = null) => {
+    setModalType(type);
+    setSelectedUser(user);
+    if (user && type === 'edit') {
+      setFormData({
+        name: user.name,
+        email: user.email,
+        password: '',
+        role_id: user.role_id,
+        phone: user.phone || '',
+        farm_id: user.farm_id || '',
+      });
+    }
+    setShowModal(true);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <NavbarAdmin />
+      <SidebarAdmin />
+      <main className="ml-48 pt-24">
+        <div className="max-w-7xl mx-auto px-8 py-8 space-y-6">
+          {/* Page Title */}
+          <h1 className="text-3xl font-bold text-gray-900">Manajemen Pengguna</h1>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-3 gap-8">
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+              <h3 className="text-sm font-medium text-gray-600 mb-2 text-center">Total Pengguna</h3>
+              <p className="text-4xl font-bold text-blue-500 text-center">{stats.total}</p>
+            </div>
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+              <h3 className="text-sm font-medium text-gray-600 mb-2 text-center">Total Pengguna Owner</h3>
+              <p className="text-4xl font-bold text-blue-500 text-center">{stats.owner}</p>
+            </div>
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+              <h3 className="text-sm font-medium text-gray-600 mb-2 text-center">Total Pengguna Peternak</h3>
+              <p className="text-4xl font-bold text-blue-500 text-center">{stats.peternak}</p>
+            </div>
+          </div>
+
+          {/* Table Card */}
+          <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
+            <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">Daftar Pengguna ({users.length})</h2>
+
+            {/* Search and Add */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex-1 max-w-md">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Cari User</label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <svg className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Masukkan nama atau email pengguna..."
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    />
+                  </div>
+                  <button
+                    onClick={handleSearch}
+                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Cari
+                  </button>
+                </div>
+              </div>
+              <button
+                onClick={() => openModal('add')}
+                className="flex items-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+                Tambahkan Akun
+              </button>
+            </div>
+
+            {/* Table */}
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto rounded-lg border border-gray-200">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr className="border-b border-gray-200">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Username</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Role</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Tanggal Bergabung</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Login Terakhir</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Email</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 bg-white">
+                      {users.length === 0 ? (
+                        <tr>
+                          <td colSpan="7" className="text-center py-12 text-gray-500">
+                            <p>Tidak ada data pengguna</p>
+                          </td>
+                        </tr>
+                      ) : (
+                        users.map((user) => (
+                          <tr key={user.id} className="hover:bg-blue-50 transition-colors">
+                            <td className="px-4 py-4 text-sm font-medium text-gray-900">{user.name}</td>
+                            <td className="px-4 py-4 text-sm text-gray-600">{user.role?.name || 'N/A'}</td>
+                            <td className="px-4 py-4">
+                              <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
+                                user.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                              }`}>
+                                {user.is_active ? 'Aktif' : 'Nonaktif'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 text-sm text-gray-600">
+                              {new Date(user.date_joined).toLocaleDateString('id-ID')}
+                            </td>
+                            <td className="px-4 py-4 text-sm text-gray-600">
+                              {user.last_login ? new Date(user.last_login).toLocaleDateString('id-ID') : '—'}
+                            </td>
+                            <td className="px-4 py-4 text-sm text-gray-600">{user.email}</td>
+                            <td className="px-4 py-4">
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  onClick={() => openModal('edit', user)}
+                                  className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={() => openModal('delete', user)}
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                >
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                <div className="flex items-center justify-center gap-2 mt-6">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {currentPage}
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(p => p + 1)}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                  >
+                    {currentPage + 1}
+                  </button>
+                  <button className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Modal */}
+          {showModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-xl">
+                {modalType === 'delete' ? (
+                  <>
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">Konfirmasi Penghapusan</h3>
+                    <p className="text-gray-600 mb-6">
+                      Apakah Anda yakin ingin menghapus akun <strong>{selectedUser?.name}</strong>?
+                    </p>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setShowModal(false)}
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        onClick={handleDelete}
+                        className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-xl font-bold text-gray-900 mb-6">
+                      {modalType === 'add' ? 'Tambah Akun Baru' : 'Edit Akun'}
+                    </h3>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Nama</label>
+                        <input
+                          type="text"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Password {modalType === 'edit' && '(Kosongkan jika tidak ingin mengubah)'}</label>
+                        <input
+                          type="password"
+                          value={formData.password}
+                          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                          required={modalType === 'add'}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                        <select
+                          value={formData.role_id}
+                          onChange={(e) => setFormData({ ...formData, role_id: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                          required
+                        >
+                          <option value="">Pilih Role</option>
+                          <option value="2">Owner</option>
+                          <option value="3">Peternak</option>
+                        </select>
+                      </div>
+                      <div className="flex gap-3 mt-6">
+                        <button
+                          type="button"
+                          onClick={() => { setShowModal(false); resetForm(); }}
+                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          Batal
+                        </button>
+                        <button
+                          type="submit"
+                          className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                        >
+                          {modalType === 'add' ? 'Tambah' : 'Simpan'}
+                        </button>
+                      </div>
+                    </form>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default ManajemenPengguna;
+
+
+
+==================================================
+FILE: src/Pages/AdminPage/KonfigurasiKandang.jsx
+==================================================
+
+import React, { useState, useEffect } from 'react';
+import axiosInstance from "../../utils/axios";
+import NavbarAdmin from '../../components/NavbarAdmin'; // ⬅️ Naik 2 level (..)
+import SidebarAdmin from '../../components/SidebarAdmin';
+
+// InputGroup di luar component agar tidak re-create setiap render
+const InputGroup = ({ label, name, value, onChange, unit = '' }) => (
+  <div>
+    <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+    <div className="relative">
+      <input
+        type="number"
+        step="0.01"
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="w-full px-3 py-2 pr-12 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm"
+        required
+      />
+      {unit && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">{unit}</span>}
+    </div>
+  </div>
+);
+
+const KonfigurasiKandang = () => {
+  const [config, setConfig] = useState({
+    temp_min_normal: '', temp_max_normal: '', temp_min_critical: '', temp_max_critical: '',
+    humidity_min_normal: '', humidity_max_normal: '', humidity_min_critical: '', humidity_max_critical: '',
+    ammonia_max_normal: '', ammonia_critical: '',
+    weight_min_weekly: '', weight_target: '', initial_weight: '',
+    feed_min_normal: '', water_min_normal: '',
+    initial_population: '', farm_area: '',
+  });
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [selectedKandang, setSelectedKandang] = useState('1');
+
+  useEffect(() => { fetchConfig(); }, []);
+
+  const fetchConfig = async () => {
+    const defaultConfig = {
+      temp_min_normal: '', temp_max_normal: '', temp_min_critical: '', temp_max_critical: '',
+      humidity_min_normal: '', humidity_max_normal: '', humidity_min_critical: '', humidity_max_critical: '',
+      ammonia_max_normal: '', ammonia_critical: '',
+      weight_min_weekly: '', weight_target: '', initial_weight: '',
+      feed_min_normal: '', water_min_normal: '',
+      initial_population: '', farm_area: '',
+    };
+    try {
+      const response = await axiosInstance.get('/api/admin/farm-config');
+      console.log('Response config:', response.data);
+      setConfig(response.data.data || defaultConfig);
+    } catch (error) {
+      console.error('Error fetching config:', error.response || error.message);
+      setConfig(defaultConfig);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await axiosInstance.put('/api/admin/farm-config', config);
+      setModalMessage('Konfigurasi berhasil disimpan!');
+      setShowSuccessModal(true);
+    } catch (error) {
+      console.error('Error saving config:', error);
+      alert(error.response?.data?.message || 'Gagal menyimpan konfigurasi');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleReset = async () => {
+    try {
+      await axiosInstance.post('/api/admin/farm-config/reset');
+      setModalMessage('Konfigurasi berhasil direset ke default!');
+      setShowResetModal(false);
+      setShowSuccessModal(true);
+      fetchConfig();
+    } catch (error) {
+      console.error('Error resetting config:', error);
+      alert(error.response?.data?.message || 'Gagal reset konfigurasi');
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setConfig(prev => ({ ...prev, [name]: value }));
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <NavbarAdmin /><SidebarAdmin />
+        <main className="ml-48 pt-24 px-8 py-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <NavbarAdmin /><SidebarAdmin />
+      <main className="ml-48 pt-24">
+        <div className="max-w-7xl mx-auto px-8 py-8 space-y-6">
+          {/* Header dengan Dropdown */}
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold text-gray-900">Konfigurasi Kandang</h1>
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium text-gray-700">Pilih Kandang:</label>
+              <select
+                value={selectedKandang}
+                onChange={(e) => setSelectedKandang(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+              >
+                <option value="1">Kandang 1</option>
+                <option value="2">Kandang 2</option>
+                <option value="3">Kandang 3</option>
+              </select>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* 2 Column Layout */}
+            <div className="grid grid-cols-2 gap-6">
+              {/* LEFT COLUMN */}
+              <div className="space-y-6">
+                {/* Temperature */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <h2 className="text-lg font-bold text-gray-900 mb-4">Pengaturan Suhu</h2>
+                  <div className="grid grid-cols-2 gap-3">
+                    <InputGroup label="Min Normal (°C)" name="temp_min_normal" value={config.temp_min_normal} onChange={handleInputChange} unit="°C" />
+                    <InputGroup label="Max Normal (°C)" name="temp_max_normal" value={config.temp_max_normal} onChange={handleInputChange} unit="°C" />
+                    <InputGroup label="Min Kritis (°C)" name="temp_min_critical" value={config.temp_min_critical} onChange={handleInputChange} unit="°C" />
+                    <InputGroup label="Max Kritis (°C)" name="temp_max_critical" value={config.temp_max_critical} onChange={handleInputChange} unit="°C" />
+                  </div>
+                </div>
+
+                {/* Ammonia */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <h2 className="text-lg font-bold text-gray-900 mb-4">Pengaturan Kadar Amonia</h2>
+                  <div className="grid grid-cols-2 gap-3">
+                    <InputGroup label="Max Normal (ppm)" name="ammonia_max_normal" value={config.ammonia_max_normal} onChange={handleInputChange} unit="ppm" />
+                    <InputGroup label="Kritis (ppm)" name="ammonia_critical" value={config.ammonia_critical} onChange={handleInputChange} unit="ppm" />
+                  </div>
+                </div>
+
+                {/* Feed */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <h2 className="text-lg font-bold text-gray-900 mb-4">Pengaturan Pakan</h2>
+                  <InputGroup label="Min Normal (gram)" name="feed_min_normal" value={config.feed_min_normal} onChange={handleInputChange} unit="g" />
+                </div>
+
+                {/* Population */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <h2 className="text-lg font-bold text-gray-900 mb-4">Populasi Awal</h2>
+                  <InputGroup label="Jumlah (ekor)" name="initial_population" value={config.initial_population} onChange={handleInputChange} unit="ekor" />
+                </div>
+
+                {/* Area */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <h2 className="text-lg font-bold text-gray-900 mb-4">Luas Kandang</h2>
+                  <InputGroup label="Luas (m²)" name="farm_area" value={config.farm_area} onChange={handleInputChange} unit="m²" />
+                </div>
+              </div>
+
+              {/* RIGHT COLUMN */}
+              <div className="space-y-6">
+                {/* Humidity */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <h2 className="text-lg font-bold text-gray-900 mb-4">Pengaturan Kelembapan</h2>
+                  <div className="grid grid-cols-2 gap-3">
+                    <InputGroup label="Min Normal (%)" name="humidity_min_normal" value={config.humidity_min_normal} onChange={handleInputChange} unit="%" />
+                    <InputGroup label="Max Normal (%)" name="humidity_max_normal" value={config.humidity_max_normal} onChange={handleInputChange} unit="%" />
+                    <InputGroup label="Min Kritis (%)" name="humidity_min_critical" value={config.humidity_min_critical} onChange={handleInputChange} unit="%" />
+                    <InputGroup label="Max Kritis (%)" name="humidity_max_critical" value={config.humidity_max_critical} onChange={handleInputChange} unit="%" />
+                  </div>
+                </div>
+
+                {/* Weight */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <h2 className="text-lg font-bold text-gray-900 mb-4">Pengaturan Bobot</h2>
+                  <div className="grid grid-cols-2 gap-3">
+                    <InputGroup label="Min/Minggu (g)" name="weight_min_weekly" value={config.weight_min_weekly} onChange={handleInputChange} unit="g" />
+                    <InputGroup label="Target Panen (g)" name="weight_target" value={config.weight_target} onChange={handleInputChange} unit="g" />
+                  </div>
+                </div>
+
+                {/* Water */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <h2 className="text-lg font-bold text-gray-900 mb-4">Pengaturan Minum</h2>
+                  <InputGroup label="Min Normal (liter)" name="water_min_normal" value={config.water_min_normal} onChange={handleInputChange} unit="L" />
+                </div>
+
+                {/* Initial Weight */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <h2 className="text-lg font-bold text-gray-900 mb-4">Bobot Rata-rata Awal</h2>
+                  <InputGroup label="Bobot (gram)" name="initial_weight" value={config.initial_weight || ''} onChange={handleInputChange} unit="g" />
+                </div>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex justify-end gap-4">
+              <button type="button" onClick={() => setShowResetModal(true)}
+                className="px-8 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium">
+                Reset ke Default
+              </button>
+              <button type="submit" disabled={saving}
+                className="px-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:bg-gray-400">
+                {saving ? 'Menyimpan...' : 'Simpan ke Konfigurasi'}
+              </button>
+            </div>
+          </form>
+
+          {/* Reset Modal */}
+          {showResetModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-xl">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">Konfirmasi Reset</h3>
+                <p className="text-gray-600 mb-6">Apakah Anda yakin ingin mereset semua konfigurasi ke nilai default?</p>
+                <div className="flex gap-3">
+                  <button onClick={() => setShowResetModal(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Batal</button>
+                  <button onClick={handleReset}
+                    className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">Reset</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Success Modal */}
+          {showSuccessModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-xl text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Berhasil!</h3>
+                <p className="text-gray-600 mb-6">{modalMessage}</p>
+                <button onClick={() => setShowSuccessModal(false)}
+                  className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">OK</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default KonfigurasiKandang;
+
+
+
+==================================================
+FILE: src/Pages/AdminPage/RiwayatLaporan.jsx
+==================================================
+
+import React, { useState, useEffect } from 'react';
+import axiosInstance from "../../utils/axios";
+import NavbarAdmin from '../../components/NavbarAdmin'; 
+import SidebarAdmin from '../../components/SidebarAdmin';
+
+const RiwayatLaporan = () => {
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('Terbaru');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedLog, setSelectedLog] = useState(null);
+
+  useEffect(() => { fetchRequests(); }, [currentPage, filter]);
+
+  const fetchRequests = async () => {
+    try {
+      setLoading(true);
+      const sortOrder = filter === 'Terbaru' ? 'desc' : 'asc';
+      const response = await axiosInstance.get('/api/admin/requests', {
+        params: { page: currentPage, sort: sortOrder }
+      });
+      console.log('Response Requests:', response.data);
+      setRequests(response.data.data || []);
+    } catch (error) {
+      console.error('Error fetching Requests:', error.response || error.message);
+      setRequests([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStatusUpdate = async (logId, newStatus) => {
+    try {
+      await axiosInstance.put(`/api/admin/requests/${logId}/status`, { status: newStatus });
+      fetchRequests();
+      setShowDetailModal(false);
+    } catch (error) {
+      console.error('Error updating status:', error);
+      alert(error.response?.data?.message || 'Gagal mengupdate status');
+    }
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      'Waiting': 'bg-yellow-100 text-yellow-700',
+      'Processing': 'bg-blue-100 text-blue-700',
+      'Done': 'bg-green-100 text-green-700',
+      'Denied': 'bg-red-100 text-red-700',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-700';
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <NavbarAdmin /><SidebarAdmin />
+        <main className="ml-48 pt-16 p-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <NavbarAdmin /><SidebarAdmin />
+      <main className="ml-48 pt-16 p-8">
+        <div className="space-y-6">
+          <h1 className="text-3xl font-bold text-gray-900">Riwayat Laporan & Permintaan</h1>
+
+          <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-gray-600">Log semua permintaan yang dikirimkan oleh pengguna sistem</p>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Urutkan:</span>
+                <select value={filter} onChange={(e) => setFilter(e.target.value)} disabled={loading}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed">
+                  <option>Terbaru</option>
+                  <option>Terlama</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">NO</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Username</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Role</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">WhatsApp</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Permintaan</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Permintaan</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Permintaan</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {requests.length === 0 ? (
+                    <tr>
+                      <td colSpan="7" className="text-center py-12 text-gray-500">
+                        <p>Belum ada laporan</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    requests.map((log, index) => (
+                      <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-4 text-sm text-gray-900">{(currentPage - 1) * 10 + index + 1}</td>
+                        <td className="px-4 py-4 text-sm font-medium text-gray-900">{log.user?.name || log.name || 'Guest'}</td>
+                        <td className="px-4 py-4 text-sm text-gray-600">{log.user?.role?.name || '—'}</td>
+                        <td className="px-4 py-4 text-sm text-gray-600">{log.phone}</td>
+                        <td className="px-4 py-4 text-sm text-gray-600">
+                          {log.created_at ? new Date(log.created_at).toLocaleString('id-ID', {
+                            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                          }) : '—'}
+                        </td>
+                        <td className="px-4 py-4 text-sm text-gray-600">{log.request_type || '—'}</td>
+                        <td className="px-4 py-4">
+                          <button onClick={() => { setSelectedLog(log); setShowDetailModal(true); }} className="relative group">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(log.status)}`}>
+                              {log.status}
+                              <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="flex items-center justify-center gap-2 mt-6">
+              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
+                {currentPage}
+              </button>
+              <button onClick={() => setCurrentPage(p => p + 1)}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                {currentPage + 1}
+              </button>
+              <button className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Detail Modal */}
+          {showDetailModal && selectedLog && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-xl">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">Detail Permintaan</h3>
+                <div className="space-y-3 mb-6">
+                  <div>
+                    <span className="text-sm text-gray-600">Nama:</span>
+                    <p className="font-medium text-gray-900">{selectedLog.user?.name || selectedLog.name || 'Guest'}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-600">Role:</span>
+                    <p className="font-medium text-gray-900">{selectedLog.user?.role?.name || '—'}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-600">WhatsApp:</span>
+                    <p className="font-medium text-gray-900">{selectedLog.phone}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-600">Jenis Permintaan:</span>
+                    <p className="font-medium text-gray-900">{selectedLog.request_type}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-600">Waktu:</span>
+                    <p className="font-medium text-gray-900">{new Date(selectedLog.created_at).toLocaleString('id-ID')}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-600">Status Saat Ini:</span>
+                    <p className={`inline-flex px-3 py-1 rounded-full text-xs font-medium mt-1 ${getStatusColor(selectedLog.status)}`}>
+                      {selectedLog.status}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Ubah Status:</p>
+                  {['Menunggu Diproses', 'Sedang Diproses', 'Selesai', 'Ditolak'].map((status) => (
+                    <button key={status} onClick={() => handleStatusUpdate(selectedLog.id, status)}
+                      className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        selectedLog.status === status ? 'bg-cyan-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}>
+                      {status}
+                    </button>
+                  ))}
+                </div>
+
+                <button onClick={() => setShowDetailModal(false)}
+                  className="w-full mt-4 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                  Tutup
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default RiwayatLaporan;
+
+
+
+==================================================
+FILE: src/components/NavbarAdmin.jsx
+==================================================
+
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+const Header = () => {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const navigate = useNavigate();
+  const userRole = localStorage.getItem('userRole') || 'Administrator';
+
+  const handleLogout = async () => {
+    try {
+      await axios.post('/api/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('userRole');
+      navigate('/login');
+    }
+  };
+
+  return (
+    <header className="h-16 bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+      <div className="h-full px-6 flex items-center justify-between">
+        {/* Logo */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gray-900 rounded-lg flex items-center justify-center">
+            <div className="grid grid-cols-2 gap-0.5">
+              <div className="w-2 h-2 bg-white rounded-sm"></div>
+              <div className="w-2 h-2 bg-white rounded-sm"></div>
+              <div className="w-2 h-2 bg-white rounded-sm"></div>
+              <div className="w-2 h-2 bg-white rounded-sm"></div>
+            </div>
+          </div>
+          <span className="text-lg font-semibold text-gray-700">Smartfarm</span>
+        </div>
+
+        {/* User Profile */}
+        <div className="relative">
+          <button
+            onClick={() => setShowDropdown(!showDropdown)}
+            className="flex items-center gap-3 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors"
+          >
+            <span className="text-sm font-medium text-gray-700">{userRole}</span>
+            <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </button>
+
+          {showDropdown && (
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
+              <div className="px-4 py-2 border-b border-gray-100">
+                <p className="text-sm font-medium text-gray-900">{userRole}</p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+              >
+                Keluar
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+};
+
+export default Header;
+
+
+
+==================================================
+FILE: src/components/SidebarAdmin.jsx
+==================================================
+
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+
+const Sidebar = () => {
+  const location = useLocation();
+
+  const menuItems = [
+    {
+      path: '/dashboard-admin',
+      label: 'Dashboard Admin',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+      ),
+    },
+    {
+      path: '/manajemen-pengguna',
+      label: 'Manajemen Pengguna',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+      ),
+    },
+    {
+      path: '/konfigurasi-kandang',
+      label: 'Konfigurasi Kandang',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      ),
+    },
+    {
+      path: '/riwayat-laporan',
+      label: 'Riwayat Laporan Admin',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+    },
+  ];
+
+  return (
+    <aside className="w-48 bg-white border-r border-gray-200 h-screen fixed left-0 top-16">
+      <nav className="py-6">
+        {menuItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`flex items-center gap-3 px-6 py-3 text-sm font-medium transition-colors ${
+                isActive
+                  ? 'text-cyan-500 bg-cyan-50 border-r-2 border-cyan-500'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+    </aside>
+  );
+};
+
+export default Sidebar;
+
+
+==================================================
+FILE: app/Http/Controllers/Admin/DashboardController.php
+==================================================
+
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\{User, Farm, RequestLog};
+use Illuminate\Http\Request;
+use Carbon\Carbon;
+
+class DashboardController extends Controller
+{
+    public function index()
+    {
+        // Count all users by role (global counts, not filtered by auth user)
+        $totalOwners = User::byRoleName('Owner')->count();
+        $totalPeternak = User::byRoleName('Peternak')->count();
+
+        // Count all farms (global count)
+        $totalFarms = Farm::count();
+
+        // Count pending requests (all users)
+        $pendingRequests = RequestLog::pending()->count();
+
+        // Count guest requests (requests from non-authenticated users)
+        $guestRequests = RequestLog::where('user_id', 0)
+            ->orWhereNull('user_id')
+            ->count();
+
+        // Get recent requests with user info (latest 5, all users)
+        $recentRequests = RequestLog::with('user')
+            ->newest()
+            ->limit(5)
+            ->get()
+            ->map(function($r) {
+                // Cek jika request punya relasi user (Owner/Peternak)
+                if ($r->user) {
+                    // Gunakan fungsi lama, karena ini sudah benar
+                    return $r->getFormattedDisplay();
+                }
+
+                // PERBAIKAN: Jika ini GUEST (user == null)
+                // Buat data array secara manual, karena getFormattedDisplay() gagal
+                return [
+                    'id' => $r->request_id,
+                    'name' => $r->sender_name ?? 'Tamu',
+                    'role' => 'Guest',
+                    'type' => $r->request_type,
+                    'status' => $r->status,
+                    'details' => $r->request_content,
+                    'created_at' => $r->sent_time ? Carbon::parse($r->sent_time)->diffForHumans() : 'Waktu tidak tersedia',
+                    'updated_at' => $r->sent_time ? Carbon::parse($r->sent_time)->diffForHumans() : 'Waktu tidak tersedia',
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'total_users' => $totalOwners + $totalPeternak,
+                'total_owners' => $totalOwners,
+                'total_peternak' => $totalPeternak,
+                'total_farms' => $totalFarms,
+                'pending_requests' => $pendingRequests,
+                'guest_requests' => $guestRequests,
+                'recent_requests' => $recentRequests,
+            ]
+        ]);
+    }
+}
+
+
+
+==================================================
+FILE: app/Http/Controllers/Admin/UserManagementController.php
+==================================================
+
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\{User, Role};
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+
+class UserManagementController extends Controller
+{
+    /**
+     * List all users (exclude admins)
+     * GET /api/admin/users?role=Owner&status=active&search=john
+     */
+    public function index(Request $request)
+{
+    $query = User::with('role')
+        ->excludeAdmins(); // tidak tampilkan admin
+
+    // Filter by role
+    if ($request->has('role')) {
+        $query->byRoleName($request->role);
+    }
+
+    // Filter by status
+    if ($request->has('status')) {
+        $query->where('status', $request->status);
+    }
+
+    // Search by name, username, or email
+    if ($request->has('search')) {
+        $search = $request->search;
+        $query->where(function ($q) use ($search) {
+            $q->where('name', 'like', "%{$search}%")
+              ->orWhere('username', 'like', "%{$search}%")
+              ->orWhere('email', 'like', "%{$search}%");
+        });
+    }
+
+    $users = $query->orderBy('date_joined', 'desc')->get();
+
+    // ⬅️ TAMBAH STATS
+    $totalOwners = User::byRoleName('Owner')->count();
+    $totalPeternak = User::byRoleName('Peternak')->count();
+
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'users' => $users->map(function ($user) {
+                return [
+                    'user_id' => $user->user_id,
+                    'username' => $user->username,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'phone_number' => $user->phone_number,
+                    'status' => $user->status,
+                    'date_joined' => $user->date_joined,
+                    'last_login' => $user->last_login,
+                ];
+            }),
+            'stats' => [
+                'total' => $users->count(),
+                'owner' => $totalOwners,
+                'peternak' => $totalPeternak,
+            ]
+        ]
+    ]);
+}
+
+    /**
+     * Create new user (Owner or Peternak)
+     * POST /api/admin/users
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'username' => 'required|string|max:50|unique:users,username',
+            'email' => 'required|email|max:100|unique:users,email',
+            'password' => 'required|string|min:6',
+            'name' => 'required|string|max:100',
+            'role_id' => 'required|exists:roles,id',
+            'phone_number' => 'nullable|string|max:20',
+            'status' => 'required|in:active,inactive',
+            'farm_id' => 'nullable|exists:farms,farm_id', // untuk peternak
+        ]);
+
+        // Tidak boleh create admin
+        if ($validated['role_id'] == Role::ROLE_ADMIN) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak dapat membuat user dengan role Admin',
+            ], 403);
+        }
+
+        $user = User::create([
+            'username' => $validated['username'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'name' => $validated['name'],
+            'role_id' => $validated['role_id'],
+            'phone_number' => $validated['phone_number'] ?? null,
+            'status' => $validated['status'],
+            'date_joined' => now(),
+        ]);
+
+        // Jika peternak, assign ke farm
+        if ($validated['role_id'] == Role::ROLE_PETERNAK && isset($validated['farm_id'])) {
+            $farm = \App\Models\Farm::find($validated['farm_id']);
+            if ($farm) {
+                $farm->update(['peternak_id' => $user->user_id]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User berhasil dibuat',
+            'data' => $user->load('role'),
+        ], 201);
+    }
+
+    /**
+     * Get user detail
+     * GET /api/admin/users/{id}
+     */
+    public function show($id)
+    {
+        $user = User::with(['role', 'ownedFarms', 'assignedFarm'])
+            ->findOrFail($id);
+
+        $data = [
+            'user_id' => $user->user_id,
+            'username' => $user->username,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role->name,
+            'role_id' => $user->role_id,
+            'phone_number' => $user->phone_number,
+            'profile_pic' => $user->profile_pic,
+            'status' => $user->status,
+            'date_joined' => $user->date_joined?->format('d M Y'),
+            'last_login' => $user->last_login?->format('d M Y H:i'),
+        ];
+
+        // Add farms info
+        if ($user->isOwner()) {
+            $data['farms'] = $user->ownedFarms->map(function ($farm) {
+                return [
+                    'farm_id' => $farm->farm_id,
+                    'farm_name' => $farm->farm_name,
+                    'location' => $farm->location,
+                ];
+            });
+        } elseif ($user->isPeternak() && $user->assignedFarm) {
+            $data['assigned_farm'] = [
+                'farm_id' => $user->assignedFarm->farm_id,
+                'farm_name' => $user->assignedFarm->farm_name,
+                'location' => $user->assignedFarm->location,
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+        ]);
+    }
+
+    /**
+     * Update user
+     * PUT /api/admin/users/{id}
+     */
+    public function update(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+
+        // Tidak boleh edit admin
+        if ($user->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak dapat mengubah user Admin',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'username' => ['sometimes', 'string', 'max:50', Rule::unique('users')->ignore($user->user_id, 'user_id')],
+            'email' => ['sometimes', 'email', 'max:100', Rule::unique('users')->ignore($user->user_id, 'user_id')],
+            'password' => 'sometimes|string|min:6',
+            'name' => 'sometimes|string|max:100',
+            'phone_number' => 'nullable|string|max:20',
+            'status' => 'sometimes|in:active,inactive',
+            'farm_id' => 'nullable|exists:farms,farm_id',
+        ]);
+
+        if (isset($validated['password'])) {
+            $validated['password'] = Hash::make($validated['password']);
+        }
+
+        $user->update($validated);
+
+        // Update farm assignment for peternak
+        if ($user->isPeternak() && isset($validated['farm_id'])) {
+            // Remove from old farm
+            if ($user->assignedFarm) {
+                $user->assignedFarm->update(['peternak_id' => null]);
+            }
+            // Assign to new farm
+            $farm = \App\Models\Farm::find($validated['farm_id']);
+            if ($farm) {
+                $farm->update(['peternak_id' => $user->user_id]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User berhasil diupdate',
+            'data' => $user->load('role'),
+        ]);
+    }
+
+    /**
+     * Delete user
+     * DELETE /api/admin/users/{id}
+     */
+    public function destroy($id)
+    {
+        $user = User::findOrFail($id);
+
+        // Tidak boleh delete admin
+        if ($user->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak dapat menghapus user Admin',
+            ], 403);
+        }
+
+        // Remove farm assignment if peternak
+        if ($user->isPeternak() && $user->assignedFarm) {
+            $user->assignedFarm->update(['peternak_id' => null]);
+        }
+
+        $user->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User berhasil dihapus',
+        ]);
+    }
+}
+
+
+==================================================
+FILE: app/Http/Controllers/Admin/FarmConfigController.php
+==================================================
+
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\{Farm, FarmConfig};
+use Illuminate\Http\Request;
+
+class FarmConfigController extends Controller
+{
+    public function index()
+    {
+        $farms = Farm::with(['owner', 'peternak'])->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $farms->map(fn($f) => [
+                'farm_id' => $f->farm_id,
+                'farm_name' => $f->farm_name,
+                'location' => $f->location,
+                'owner' => $f->owner->name,
+                'peternak' => $f->peternak?->name,
+                'status' => $f->calculateStatus(),
+            ])
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'owner_id' => 'required|exists:users,user_id',
+            'farm_name' => 'required|string|max:100',
+            'location' => 'nullable|string|max:255',
+            'initial_population' => 'nullable|integer',
+            'initial_weight' => 'nullable|numeric',
+            'farm_area' => 'nullable|integer',
+        ]);
+
+        $farm = Farm::create($validated);
+
+        // Create default config
+        FarmConfig::createDefaultsForFarm($farm->farm_id);
+
+        return response()->json(['success' => true, 'message' => 'Farm berhasil dibuat', 'data' => $farm], 201);
+    }
+
+    public function show($id)
+    {
+        $farm = Farm::with(['owner', 'peternak', 'latestSensorData'])->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'farm_id' => $farm->farm_id,
+                'farm_name' => $farm->farm_name,
+                'location' => $farm->location,
+                'owner' => $farm->owner->name,
+                'peternak' => $farm->peternak?->name,
+                'initial_population' => $farm->initial_population,
+                'initial_weight' => $farm->initial_weight,
+                'farm_area' => $farm->farm_area,
+                'status' => $farm->calculateStatus(),
+                'latest_sensor' => $farm->latestSensorData,
+            ]
+        ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $farm = Farm::findOrFail($id);
+
+        $validated = $request->validate([
+            'farm_name' => 'sometimes|string|max:100',
+            'location' => 'nullable|string|max:255',
+            'initial_population' => 'nullable|integer',
+            'initial_weight' => 'nullable|numeric',
+            'farm_area' => 'nullable|integer',
+            'peternak_id' => 'nullable|exists:users,user_id',
+        ]);
+
+        $farm->update($validated);
+
+        return response()->json(['success' => true, 'message' => 'Farm berhasil diupdate', 'data' => $farm]);
+    }
+
+    public function destroy($id)
+    {
+        Farm::findOrFail($id)->delete();
+        return response()->json(['success' => true, 'message' => 'Farm berhasil dihapus']);
+    }
+
+    public function getFarmConfig(Request $request)
+{
+    $farmId = $request->farm_id ?? 1;
+    $farm = Farm::findOrFail($farmId);
+    $config = $farm->getConfigArray();
+
+    return response()->json([
+        'success' => true,
+        'data' => $config
+    ]);
+}
+
+    public function updateFarmConfig(Request $request)
+{
+    $farmId = $request->farm_id ?? 1;
+
+        $validated = $request->validate([
+            'suhu_normal_min' => 'nullable|numeric',
+            'suhu_normal_max' => 'nullable|numeric',
+            'suhu_kritis_rendah' => 'nullable|numeric',
+            'suhu_kritis_tinggi' => 'nullable|numeric',
+            'kelembapan_normal_min' => 'nullable|numeric',
+            'kelembapan_normal_max' => 'nullable|numeric',
+            'kelembapan_kritis_rendah' => 'nullable|numeric',
+            'kelembapan_kritis_tinggi' => 'nullable|numeric',
+            'amonia_max' => 'nullable|numeric',
+            'amonia_kritis' => 'nullable|numeric',
+            'pakan_min' => 'nullable|numeric',
+            'minum_min' => 'nullable|numeric',
+            'pertumbuhan_mingguan_min' => 'nullable|numeric',
+            'target_bobot' => 'nullable|numeric',
+        ]);
+
+        FarmConfig::updateMultiple($farmId, $validated);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Konfigurasi berhasil diupdate'
+    ]);
+}
+}
+
+
+==================================================
+FILE: app/Http/Controllers/Admin/RequestLogController.php
+==================================================
+
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\RequestLog;
+use Illuminate\Http\Request;
+
+class RequestLogController extends Controller
+{
+    public function index(Request $request)
+{
+    $query = RequestLog::with('user.role');
+
+    if ($request->status) $query->where('status', $request->status);
+    if ($request->type) $query->where('request_type', $request->type);
+
+    // Sort
+    if ($request->sort === 'oldest') {
+        $query->orderBy('sent_time', 'asc');
+    } else {
+        $query->orderBy('sent_time', 'desc');
+    }
+
+    $requests = $query->get();
+
+    return response()->json([
+        'success' => true,
+        'data' => $requests->map(function($r) {
+            // Decode request_content JSON
+            $content = json_decode($r->request_content, true);
+            
+            return [
+                'id' => $r->request_id,
+                'name' => $r->sender_name,
+                'phone' => $content['phone'] ?? $r->phone_number ?? 'N/A', // ⬅️ dari JSON content
+                'request_type' => $r->request_type,
+                'status' => $r->status,
+                'created_at' => $r->sent_time,
+                'details' => $content, // ⬅️ TAMBAH ini untuk modal detail
+                'user' => $r->user ? [
+                    'name' => $r->user->name,
+                    'role' => $r->user->role ? [
+                        'name' => $r->user->role->name
+                    ] : null
+                ] : null
+            ];
+        })
+    ]);
+}
+    public function show($id)
+    {
+        $request = RequestLog::with('user')->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $request->getFormattedDisplay()
+        ]);
+    }
+
+}
+
+
+
+==================================================
+FILE: routes/api.php
+==================================================
+
+<?php
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\AccountRequestController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\FarmConfigController as AdminFarmConfigController;
+use App\Http\Controllers\Admin\RequestLogController;
+use App\Http\Controllers\Owner\DashboardController as OwnerDashboardController;
+use App\Http\Controllers\Owner\MonitoringController;
+use App\Http\Controllers\Owner\AnalysisController;
+use App\Http\Controllers\Peternak\DashboardController as PeternakDashboardController;
+use App\Http\Controllers\Peternak\ManualInputController;
+use App\Http\Controllers\Peternak\ProfileController;
+use App\Http\Controllers\IoTController;
+
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+*/
+
+// Public routes - Authentication
+Route::post('/login', [LoginController::class, 'login']);
+Route::post('/request-account', [AccountRequestController::class, 'submit']);
+Route::get('/request-account/status', [AccountRequestController::class, 'checkStatus']);
+
+// IoT endpoint (dapat ditambahkan authentication dengan API key)
+Route::post('/iot/sensor-data', [IoTController::class, 'storeSensorData']);
+
+// Protected routes - require authentication
+Route::middleware('auth:sanctum')->group(function () {
+    
+    // Common auth routes
+    Route::post('/logout', [LoginController::class, 'logout']);
+    Route::get('/me', [LoginController::class, 'me']);
+
+    // Admin routes
+    Route::prefix('admin')->middleware('role:Admin')->group(function () {
+        // Dashboard
+        Route::get('/dashboard', [AdminDashboardController::class, 'index']);
+        
+        // User Management
+        Route::get('/users', [UserManagementController::class, 'index']);
+        Route::post('/users', [UserManagementController::class, 'store']);
+        Route::get('/users/{id}', [UserManagementController::class, 'show']);
+        Route::put('/users/{id}', [UserManagementController::class, 'update']);
+        Route::delete('/users/{id}', [UserManagementController::class, 'destroy']);
+        
+        // Farm Management
+        Route::get('/farms', [AdminFarmConfigController::class, 'index']);
+        Route::post('/farms', [AdminFarmConfigController::class, 'store']);
+        Route::get('/farms/{id}', [AdminFarmConfigController::class, 'show']);
+        Route::put('/farms/{id}', [AdminFarmConfigController::class, 'update']);
+        Route::delete('/farms/{id}', [AdminFarmConfigController::class, 'destroy']);
+        
+        // Farm Configuration
+        Route::get('/farms/{id}/config', [AdminFarmConfigController::class, 'getConfig']);
+        Route::put('/farms/{id}/config', [AdminFarmConfigController::class, 'updateConfig']);
+        
+        // Request Log Management
+        Route::get('/requests', [RequestLogController::class, 'index']);
+        Route::get('/requests/{id}', [RequestLogController::class, 'show']);
+        Route::put('/requests/{id}/status', [RequestLogController::class, 'updateStatus']);
+    });
+
+    // Owner routes
+    Route::prefix('owner')->middleware('role:Owner')->group(function () {
+        // Dashboard
+        Route::get('/dashboard', [OwnerDashboardController::class, 'index']);
+        
+        // Farms
+        Route::get('/farms', [OwnerDashboardController::class, 'getFarms']);
+        Route::get('/farms/{id}', [OwnerDashboardController::class, 'showFarm']);
+        
+        // Monitoring
+        Route::get('/farms/{id}/monitoring', [MonitoringController::class, 'index']);
+        Route::get('/farms/{id}/latest-sensor', [MonitoringController::class, 'latestSensor']);
+        Route::get('/farms/{id}/sensor-history', [MonitoringController::class, 'sensorHistory']);
+        
+        // Analysis & Reports
+        Route::get('/farms/{id}/analytics', [AnalysisController::class, 'index']);
+        Route::get('/farms/{id}/reports', [AnalysisController::class, 'reports']);
+        Route::get('/farms/{id}/statistics', [AnalysisController::class, 'statistics']);
+        
+        // Request tambah kandang
+        Route::post('/request-farm', [OwnerDashboardController::class, 'requestAddFarm']);
+    });
+
+    // Peternak routes
+    Route::prefix('peternak')->middleware('role:Peternak')->group(function () {
+        // Dashboard
+        Route::get('/dashboard', [PeternakDashboardController::class, 'index']);
+        
+        // Farm assigned
+        Route::get('/farm', [PeternakDashboardController::class, 'getFarm']);
+        
+        // Manual data input
+        Route::get('/manual-data', [ManualInputController::class, 'index']);
+        Route::post('/manual-data', [ManualInputController::class, 'store']);
+        Route::get('/manual-data/{id}', [ManualInputController::class, 'show']);
+        Route::put('/manual-data/{id}', [ManualInputController::class, 'update']);
+        
+        // Profile
+        Route::get('/profile', [ProfileController::class, 'show']);
+        Route::put('/profile', [ProfileController::class, 'update']);
+        Route::post('/profile/photo', [ProfileController::class, 'updatePhoto']);
+    });
+
+    // Common farm status endpoint (accessible by owner and peternak)
+    Route::get('/farms/{id}/status', [IoTController::class, 'getFarmStatus']);
+});
+
+
+
+==================================================
+FILE: app/Models/User.php
+==================================================
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+
+class User extends Authenticatable
+{
+    use HasApiTokens, HasFactory, Notifiable;
+
+    protected $table = 'users';
+    protected $primaryKey = 'user_id';
+
+    /**
+     * The attributes that are mass assignable.
+     */
+    protected $fillable = [
+        'role_id',
+        'username',
+        'email',
+        'password',
+        'name',
+        'phone_number',
+        'profile_pic',
+        'status',
+        'date_joined',
+        'last_login',
+    ];
+
+    /**
+     * The attributes that should be hidden.
+     */
+    protected $hidden = [
+        'password',
+    ];
+
+    /**
+     * Get the attributes that should be cast.
+     */
+    protected function casts(): array
+    {
+        return [
+            'date_joined' => 'date',
+            'last_login' => 'datetime',
+            'password' => 'hashed',
+        ];
+    }
+
+    /**
+     * Disable timestamps
+     */
+    public $timestamps = false;
+
+    /**
+     * Get the role of the user
+     */
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'role_id', 'id');
+    }
+
+    /**
+     * Get farms owned by this user (for Owner role)
+     */
+    public function ownedFarms()
+    {
+        return $this->hasMany(Farm::class, 'owner_id', 'user_id');
+    }
+
+    /**
+     * Get farm assigned to peternak (for Peternak role)
+     */
+    public function assignedFarm()
+    {
+        return $this->hasOne(Farm::class, 'peternak_id', 'user_id');
+    }
+
+    /**
+     * Get manual data entries by this user
+     */
+    public function manualDataEntries()
+    {
+        return $this->hasMany(ManualData::class, 'user_id_input', 'user_id');
+    }
+
+    /**
+     * Get request logs by this user
+     */
+    public function requestLogs()
+    {
+        return $this->hasMany(RequestLog::class, 'user_id', 'user_id');
+    }
+
+    /**
+     * Get sent notifications
+     */
+    public function sentNotifications()
+    {
+        return $this->hasMany(NotificationLog::class, 'sender_user_id', 'user_id');
+    }
+
+    /**
+     * Get received notifications
+     */
+    public function receivedNotifications()
+    {
+        return $this->hasMany(NotificationLog::class, 'recipient_user_id', 'user_id');
+    }
+
+    /**
+     * Check if user is admin
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role && $this->role->name === 'Admin';
+    }
+
+    /**
+     * Check if user is owner
+     */
+    public function isOwner(): bool
+    {
+        return $this->role && $this->role->name === 'Owner';
+    }
+
+    /**
+     * Check if user is peternak
+     */
+    public function isPeternak(): bool
+    {
+        return $this->role && $this->role->name === 'Peternak';
+    }
+
+    /**
+     * Update last login timestamp
+     */
+    public function updateLastLogin()
+    {
+        $this->update(['last_login' => now()]);
+    }
+
+    /**
+     * Scope to filter by role name
+     */
+    public function scopeByRoleName($query, $roleName)
+    {
+        return $query->whereHas('role', function ($q) use ($roleName) {
+            $q->where('name', $roleName);
+        });
+    }
+
+    /**
+     * Scope to filter active users
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    /**
+     * Scope to exclude admins
+     */
+    public function scopeExcludeAdmins($query)
+    {
+        return $query->whereHas('role', function ($q) {
+            $q->where('name', '!=', 'Admin');
+        });
+    }
+
+    /**
+     * Get role name
+     */
+    public function getRoleNameAttribute()
+    {
+        return $this->role ? $this->role->name : null;
+    }
+}
+
+
+
+==================================================
+FILE: app/Models/RequestLog.php
+==================================================
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
+
+class RequestLog extends Model
+{
+    use HasFactory;
+
+    protected $table = 'request_log';
+    protected $primaryKey = 'request_id';
+    public $timestamps = false;
+
+    protected $fillable = [
+        'user_id',
+        'sender_name',
+        'request_type',
+        'request_content',
+        'status',
+        'sent_time',
+    ];
+
+    protected $casts = [
+        'sent_time' => 'datetime',
+    ];
+
+    /**
+     * Status constants
+     */
+    const STATUS_PENDING = 'menunggu';
+    const STATUS_PROCESSING = 'diproses';
+    const STATUS_COMPLETED = 'selesai';
+    const STATUS_REJECTED = 'ditolak';
+
+    /**
+     * Request type constants
+     */
+    const TYPE_NEW_ACCOUNT = 'akun_baru';
+    const TYPE_ADD_FARM = 'tambah_kandang';
+    const TYPE_EDIT_ACCOUNT = 'edit_akun';
+    const TYPE_OTHER = 'lainnya';
+
+    /**
+     * Get the user who made the request
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'user_id');
+    }
+
+    /**
+     * Scope to filter by status
+     */
+    public function scopeByStatus($query, $status)
+    {
+        return $query->where('status', $status);
+    }
+
+    /**
+     * Scope to get pending requests
+     */
+    public function scopePending($query)
+    {
+        return $query->where('status', self::STATUS_PENDING);
+    }
+
+    /**
+     * Scope to get processing requests
+     */
+    public function scopeProcessing($query)
+    {
+        return $query->where('status', self::STATUS_PROCESSING);
+    }
+
+    /**
+     * Scope to get completed requests
+     */
+    public function scopeCompleted($query)
+    {
+        return $query->where('status', self::STATUS_COMPLETED);
+    }
+
+    /**
+     * Scope to order by newest first
+     */
+    public function scopeNewest($query)
+    {
+        return $query->orderBy('sent_time', 'desc');
+    }
+
+    /**
+     * Scope to order by oldest first
+     */
+    public function scopeOldest($query)
+    {
+        return $query->orderBy('sent_time', 'asc');
+    }
+
+    /**
+     * Scope to filter by request type
+     */
+    public function scopeByType($query, $type)
+    {
+        return $query->where('request_type', $type);
+    }
+
+    /**
+     * Mark request as processing
+     */
+    public function markAsProcessing()
+    {
+        $this->update(['status' => self::STATUS_PROCESSING]);
+    }
+
+    /**
+     * Mark request as completed
+     */
+    public function markAsCompleted()
+    {
+        $this->update(['status' => self::STATUS_COMPLETED]);
+    }
+
+    /**
+     * Mark request as rejected
+     */
+    public function markAsRejected()
+    {
+        $this->update(['status' => self::STATUS_REJECTED]);
+    }
+
+    /**
+     * Get status color
+     */
+    public function getStatusColor()
+    {
+        return match($this->status) {
+            self::STATUS_PENDING => 'yellow',
+            self::STATUS_PROCESSING => 'blue',
+            self::STATUS_COMPLETED => 'green',
+            self::STATUS_REJECTED => 'red',
+            default => 'gray',
+        };
+    }
+
+    /**
+     * Get request type label
+     */
+    public function getRequestTypeLabel()
+    {
+        return match($this->request_type) {
+            self::TYPE_NEW_ACCOUNT => 'Akun Baru',
+            self::TYPE_ADD_FARM => 'Tambah Kandang',
+            self::TYPE_EDIT_ACCOUNT => 'Edit Akun',
+            self::TYPE_OTHER => 'Lainnya',
+            default => $this->request_type,
+        };
+    }
+
+    /**
+     * Get formatted display
+     */
+    public function getFormattedDisplay()
+    {
+        $role = 'Guest'; // Default
+        if ($this->user && $this->user->role) {
+            $role = $this->user->role->name;
+        }
+        $name = $this->sender_name;
+
+        if (empty($name)) {
+            if ($this->user) {
+                $name = $this->user->name;
+            }
+            else {
+                $name = ($role === 'Guest') ? 'Tamu' : 'Nama Tidak Tersedia';
+            }
+        }
+
+        $timeString = 'Waktu tidak tersedia';
+        if ($this->sent_time) {
+            $timeString = Carbon::parse($this->sent_time)->diffForHumans();
+        }
+
+        return [
+            'id' => $this->request_id,
+            'name' => $name,
+            'role' => $role,
+            'type' => $this->request_type,
+            'status' => $this->status,
+            'details' => $this->request_content,
+
+            'created_at' => $timeString,
+            'updated_at' => $timeString,
+        ];
+    }
+}
+
+
+
+==================================================
+FILE: app/Models/Farm.php
+==================================================
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Farm extends Model
+{
+    use HasFactory;
+
+    protected $table = 'farms';
+    protected $primaryKey = 'farm_id';
+    public $timestamps = false;
+
+    protected $fillable = [
+        'owner_id',
+        'peternak_id',
+        'farm_name',
+        'location',
+        'initial_population',
+        'initial_weight',
+        'farm_area',
+    ];
+
+    protected $casts = [
+        'initial_population' => 'integer',
+        'initial_weight' => 'float',
+        'farm_area' => 'integer',
+    ];
+
+    /**
+     * Get the owner of this farm
+     */
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'owner_id', 'user_id');
+    }
+
+    /**
+     * Get the peternak assigned to this farm
+     */
+    public function peternak()
+    {
+        return $this->belongsTo(User::class, 'peternak_id', 'user_id');
+    }
+
+    /**
+     * Get farm configurations
+     */
+    public function configs()
+    {
+        return $this->hasMany(FarmConfig::class, 'farm_id', 'farm_id');
+    }
+
+    /**
+     * Get specific config parameter
+     */
+    public function getConfig($parameterName)
+    {
+        return $this->configs()
+            ->where('parameter_name', $parameterName)
+            ->value('value');
+    }
+
+    /**
+     * Get all configs as key-value pairs
+     */
+    public function getConfigArray()
+    {
+        return $this->configs()
+            ->pluck('value', 'parameter_name')
+            ->toArray();
+    }
+
+    /**
+     * Get IoT sensor data
+     */
+    public function iotData()
+    {
+        return $this->hasMany(IotData::class, 'farm_id', 'farm_id');
+    }
+
+    /**
+     * Get latest sensor data
+     */
+    public function latestSensorData()
+    {
+        return $this->hasOne(IotData::class, 'farm_id', 'farm_id')
+            ->latest('timestamp');
+    }
+
+    /**
+     * Get manual data entries
+     */
+    public function manualData()
+    {
+        return $this->hasMany(ManualData::class, 'farm_id', 'farm_id');
+    }
+
+    /**
+     * Get notifications related to this farm
+     */
+    public function notifications()
+    {
+        return $this->hasMany(NotificationLog::class, 'farm_id', 'farm_id');
+    }
+
+    /**
+     * Calculate farm status based on latest sensor data and config
+     */
+    public function calculateStatus()
+    {
+        $latestData = $this->latestSensorData;
+        
+        if (!$latestData) {
+            return 'normal';
+        }
+
+        $config = $this->getConfigArray();
+        
+        if (empty($config)) {
+            return 'normal';
+        }
+
+        $criticalCount = 0;
+        $warningCount = 0;
+
+        // Check temperature
+        $tempNormalMin = $config['suhu_normal_min'] ?? 28;
+        $tempNormalMax = $config['suhu_normal_max'] ?? 32;
+        $tempCriticalLow = $config['suhu_kritis_rendah'] ?? 26;
+        $tempCriticalHigh = $config['suhu_kritis_tinggi'] ?? 35;
+
+        if ($latestData->temperature < $tempCriticalLow || 
+            $latestData->temperature > $tempCriticalHigh) {
+            $criticalCount++;
+        } elseif ($latestData->temperature < $tempNormalMin || 
+                  $latestData->temperature > $tempNormalMax) {
+            $warningCount++;
+        }
+
+        // Check humidity
+        $humidityNormalMin = $config['kelembapan_normal_min'] ?? 60;
+        $humidityNormalMax = $config['kelembapan_normal_max'] ?? 70;
+        $humidityCriticalLow = $config['kelembapan_kritis_rendah'] ?? 50;
+        $humidityCriticalHigh = $config['kelembapan_kritis_tinggi'] ?? 80;
+
+        if ($latestData->humidity < $humidityCriticalLow || 
+            $latestData->humidity > $humidityCriticalHigh) {
+            $criticalCount++;
+        } elseif ($latestData->humidity < $humidityNormalMin || 
+                  $latestData->humidity > $humidityNormalMax) {
+            $warningCount++;
+        }
+
+        // Check ammonia
+        $ammoniaMax = $config['amonia_max'] ?? 20;
+        $ammoniaCritical = $config['amonia_kritis'] ?? 30;
+
+        if ($latestData->ammonia > $ammoniaCritical) {
+            $criticalCount++;
+        } elseif ($latestData->ammonia > $ammoniaMax) {
+            $warningCount++;
+        }
+
+        // Determine status
+        if ($criticalCount > 0) {
+            return 'bahaya';
+        } elseif ($warningCount >= 2) {
+            return 'waspada';
+        }
+
+        return 'normal';
+    }
+
+    /**
+     * Get status color for UI
+     */
+    public function getStatusColor()
+    {
+        $status = $this->calculateStatus();
+        
+        return match($status) {
+            'normal' => 'green',
+            'waspada' => 'yellow',
+            'bahaya' => 'red',
+            default => 'gray',
+        };
+    }
+
+    /**
+     * Scope to filter farms by owner
+     */
+    public function scopeByOwner($query, $ownerId)
+    {
+        return $query->where('owner_id', $ownerId);
+    }
+
+    /**
+     * Scope to filter farms by peternak
+     */
+    public function scopeByPeternak($query, $peternakId)
+    {
+        return $query->where('peternak_id', $peternakId);
+    }
+}
+
+
+
+==================================================
+FILE: app/Models/FarmConfig.php
+==================================================
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class FarmConfig extends Model
+{
+    use HasFactory;
+
+    protected $table = 'farm_config';
+    protected $primaryKey = 'config_id';
+    public $timestamps = false;
+
+    protected $fillable = [
+        'farm_id',
+        'parameter_name',
+        'value',
+    ];
+
+    protected $casts = [
+        'value' => 'float',
+    ];
+
+    /**
+     * Get the farm that owns this config
+     */
+    public function farm()
+    {
+        return $this->belongsTo(Farm::class, 'farm_id', 'farm_id');
+    }
+
+    /**
+     * Default configuration parameters
+     */
+    public static function getDefaults()
+    {
+        return [
+            'suhu_normal_min' => 28.0,
+            'suhu_normal_max' => 32.0,
+            'suhu_kritis_rendah' => 26.0,
+            'suhu_kritis_tinggi' => 35.0,
+            'kelembapan_normal_min' => 60.0,
+            'kelembapan_normal_max' => 70.0,
+            'kelembapan_kritis_rendah' => 50.0,
+            'kelembapan_kritis_tinggi' => 80.0,
+            'amonia_max' => 20.0,
+            'amonia_kritis' => 30.0,
+            'pakan_min' => 50.0,
+            'minum_min' => 100.0,
+            'pertumbuhan_mingguan_min' => 0.5,
+            'target_bobot' => 2.0,
+        ];
+    }
+
+    /**
+     * Create default configs for a farm
+     */
+    public static function createDefaultsForFarm($farmId)
+    {
+        $defaults = self::getDefaults();
+        
+        foreach ($defaults as $parameter => $value) {
+            self::updateOrCreate(
+                [
+                    'farm_id' => $farmId,
+                    'parameter_name' => $parameter,
+                ],
+                [
+                    'value' => $value,
+                ]
+            );
+        }
+    }
+
+    /**
+     * Update multiple configs for a farm
+     */
+    public static function updateMultiple($farmId, array $configs)
+    {
+        foreach ($configs as $parameter => $value) {
+            self::updateOrCreate(
+                [
+                    'farm_id' => $farmId,
+                    'parameter_name' => $parameter,
+                ],
+                [
+                    'value' => $value,
+                ]
+            );
+        }
+    }
+
+    /**
+     * Scope to filter by farm
+     */
+    public function scopeForFarm($query, $farmId)
+    {
+        return $query->where('farm_id', $farmId);
+    }
+}
+
+
+
+==================================================
+FILE: app/Models/Role.php
+==================================================
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Role extends Model
+{
+    use HasFactory;
+
+    protected $table = 'roles';
+
+    protected $fillable = [
+        'name',
+        'description',
+    ];
+
+    /**
+     * Get users with this role
+     */
+    public function users()
+    {
+        return $this->hasMany(User::class, 'role_id', 'id');
+    }
+
+    /**
+     * Role constants
+     */
+    const ROLE_ADMIN = 1;
+    const ROLE_OWNER = 2;
+    const ROLE_PETERNAK = 3;
+
+    /**
+     * Get role ID by name
+     */
+    public static function getIdByName($name)
+    {
+        return self::where('name', $name)->value('id');
+    }
+}
+
+
+
+
