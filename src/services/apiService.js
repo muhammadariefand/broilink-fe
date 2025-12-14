@@ -166,6 +166,18 @@ const apiService = {
       return apiService.put(`/admin/farms/${farmId}/assign-peternak`, { peternak_id: peternakId });
     },
 
+    async getFarmDetails(farmId) {
+      return apiService.get(`/admin/farms/${farmId}`);
+    },
+
+    async updateFarmArea(farmId, area) {
+      return apiService.put(`/admin/farms/${farmId}/update-area`, { farm_area: area });
+    },
+
+    async updateFarmPopulation(farmId, population) {
+      return apiService.put(`/admin/farms/${farmId}/update-population`, { initial_population: population });
+    },
+
     async getRequests() {
       return apiService.get('/admin/requests');
     },

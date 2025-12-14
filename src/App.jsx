@@ -12,6 +12,7 @@ import SimulationPage from './Pages/SimulationPage';
 import AdminLayout from './Pages/AdminPage/AdminLayout';
 import DashboardAdmin from './Pages/AdminPage/DashboardAdmin';
 import ManajemenPengguna from './Pages/AdminPage/ManajemenPengguna';
+import ManajemenKandang from './Pages/AdminPage/ManajemenKandang';
 import KonfigurasiKandang from './Pages/AdminPage/KonfigurasiKandang';
 import RiwayatLaporan from './Pages/AdminPage/RiwayatLaporan';
 
@@ -63,6 +64,7 @@ function App() {
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardAdmin />} />
           <Route path="users" element={<ManajemenPengguna />} />
+          <Route path="kandang" element={<ManajemenKandang />} />
           <Route path="farms" element={<KonfigurasiKandang />} />
           <Route path="requests" element={<RiwayatLaporan />} />
         </Route>

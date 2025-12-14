@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Settings, History } from "lucide-react";
+import { Home, Users, Settings, History, Building2 } from "lucide-react";
 
 const SidebarAdmin = () => {
   const location = useLocation();
@@ -8,8 +8,9 @@ const SidebarAdmin = () => {
   const menuItems = [
     { path: "/admin/dashboard", icon: <Home size={18} />, label: "Dashboard" },
     { path: "/admin/users", icon: <Users size={18} />, label: "Manajemen Pengguna" },
+    { path: "/admin/kandang", icon: <Building2 size={18} />, label: "Manajemen Kandang" },
     { path: "/admin/farms", icon: <Settings size={18} />, label: "Konfigurasi IoT" },
-    { path: "/admin/requests", icon: <History size={18} />, label: "Riwayat Laporan" },  
+    { path: "/admin/requests", icon: <History size={18} />, label: "Riwayat Laporan" },
   ];
 
   return (
