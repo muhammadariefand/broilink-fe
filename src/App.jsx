@@ -6,6 +6,9 @@ import Login from './components/Login.jsx';
 import AccountIssues from './components/AccountIssues.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 
+// Import Halaman Simulasi Baru
+import SimulationPage from './Pages/SimulationPage'; 
+
 import AdminLayout from './Pages/AdminPage/AdminLayout';
 import DashboardAdmin from './Pages/AdminPage/DashboardAdmin';
 import ManajemenPengguna from './Pages/AdminPage/ManajemenPengguna';
@@ -48,6 +51,9 @@ function App() {
           path="/account-issues"
           element={<AccountIssues />}
         />
+
+        {/* ROUTE BUAT TESTING SIMULASI IOT */}
+        <Route path="/simulation" element={<SimulationPage />} />
 
         <Route path="/admin" element={
           <ProtectedRoute allowedRoles={["Admin"]}>
