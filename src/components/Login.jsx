@@ -135,8 +135,8 @@ const ModalOtherProblem = ({ onClose, onSuccess }) => {
                 value={problemType}
                 onChange={(e) => setProblemType(e.target.value)}
                 className="modal-select"
-                placeholder="Pilih jenis masalah"
-            >            
+            >
+                <option value="">-- Pilih Jenis Masalah --</option>
                 <option value="Menunggu Detail Login">Menunggu Detail Login</option>
                 <option value="Masalah Data">Masalah Data</option>
                 <option value="Lainnya">Lainnya</option>

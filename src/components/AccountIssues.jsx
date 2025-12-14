@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import apiService from '../services/apiService';
 
 const BroilinkLogo = () => (
   <div className="flex items-center gap-2">
@@ -15,50 +16,81 @@ const BroilinkLogo = () => (
 
 const AccountIssues = () => {
   const navigate = useNavigate();
-  const [fullName, setFullName] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [problemType, setProblemType] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    const trimmedFullName = fullName.trim();
     const trimmedWhatsappNumber = whatsappNumber.trim();
+    const trimmedEmail = email.trim();
+    const trimmedProblemType = problemType.trim();
 
-    if (!trimmedFullName) {
-      setError('Nama lengkap harus diisi');
-      return;
-    }
+    // Validation
     if (!trimmedWhatsappNumber) {
       setError('Nomor WhatsApp harus diisi');
       return;
     }
 
-    // Validate WhatsApp number format (basic validation)
-    const phoneRegex = /^[0-9]{10,15}$/;
-    if (!phoneRegex.test(trimmedWhatsappNumber.replace(/[\s-]/g, ''))) {
-      setError('Nomor WhatsApp tidak valid');
+    // Validate WhatsApp number format: must start with 08, 10-13 digits
+    const phoneRegex = /^08[0-9]{8,11}$/;
+    if (!phoneRegex.test(trimmedWhatsappNumber)) {
+      setError('Nomor WhatsApp tidak valid. Format: 08xxxxxxxxxx (10-13 digit)');
       return;
     }
 
+    if (!trimmedEmail) {
+      setError('Email harus diisi');
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setError('Email tidak valid');
+      return;
+    }
+
+    if (!trimmedProblemType) {
+      setError('Jenis masalah harus dipilih');
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      // Here you would typically make an API call to submit the account issue
-      // For now, we'll just show a success message
-      setSuccess('Permintaan Anda telah dikirim. Tim kami akan segera menghubungi Anda.');
+      const response = await apiService.public.guestReport({
+        whatsapp: trimmedWhatsappNumber,
+        email: trimmedEmail,
+        problem_type: trimmedProblemType
+      });
 
-      // Reset form
-      setFullName('');
-      setWhatsappNumber('');
+      if (response.success) {
+        setSuccess(response.message || 'Laporan berhasil terkirim. Admin akan menghubungi Anda segera.');
 
-      // Optionally redirect back to login after a delay
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
+        // Reset form
+        setWhatsappNumber('');
+        setEmail('');
+        setProblemType('');
+
+        // Redirect back to login after 3 seconds
+        setTimeout(() => {
+          navigate('/login');
+        }, 3000);
+      } else {
+        setError(response.message || 'Gagal mengirim laporan. Silakan coba lagi.');
+      }
     } catch (err) {
-      setError('Terjadi kesalahan. Silakan coba lagi.');
+      console.error('Guest report error:', err);
+      setError('Masalah koneksi. Pastikan backend berjalan dan coba lagi.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -83,26 +115,10 @@ const AccountIssues = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Full Name Field */}
-            <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
-                Nama Lengkap
-              </label>
-              <input
-                id="fullName"
-                name="fullName"
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                autoComplete="name"
-              />
-            </div>
-
             {/* WhatsApp Number Field */}
             <div>
               <label htmlFor="whatsappNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                Nomor WhatsApp
+                Nomor WhatsApp <span className="text-red-500">*</span>
               </label>
               <input
                 id="whatsappNumber"
@@ -113,15 +129,55 @@ const AccountIssues = () => {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                 autoComplete="tel"
                 placeholder="08xxxxxxxxxx"
+                required
               />
+            </div>
+
+            {/* Email Field */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                autoComplete="email"
+                placeholder="nama@example.com"
+                required
+              />
+            </div>
+
+            {/* Problem Type Dropdown */}
+            <div>
+              <label htmlFor="problemType" className="block text-sm font-medium text-gray-700 mb-2">
+                Jenis Masalah <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="problemType"
+                name="problemType"
+                value={problemType}
+                onChange={(e) => setProblemType(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                required
+              >
+                <option value="">-- Pilih Jenis Masalah --</option>
+                <option value="Menunggu Detail Login">Menunggu Detail Login</option>
+                <option value="Masalah Data">Masalah Data</option>
+                <option value="Lainnya">Lainnya</option>
+              </select>
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition duration-200"
+              disabled={loading}
+              className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              Kirim
+              {loading ? 'Mengirim...' : 'Kirim'}
             </button>
           </form>
 
