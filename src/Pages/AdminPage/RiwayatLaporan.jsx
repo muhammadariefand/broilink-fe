@@ -3,74 +3,15 @@ import adminService from '../../services/adminService';
 import { handleError } from '../../utils/errorHandler';
 import NavbarAdmin from '../../components/NavbarAdmin';
 import SidebarAdmin from '../../components/SidebarAdmin';
+import RequestDetailModal from '../../components/RequestDetailModal';
 
 const RiwayatLaporan = () => {
-  // Initialize with mock data
-  const [requests, setRequests] = useState([
-    {
-      id: 1,
-      name: 'Budi Santoso',
-      role: 'Owner',
-      user: { name: 'Budi Santoso', role: { name: 'Owner' } },
-      phone: '+62812-3456-7890',
-      whatsapp: '+62812-3456-7890',
-      created_at: '2025-11-20T14:30:00Z',
-      request_type: 'Permintaan reset password',
-      detail: 'Permintaan reset password',
-      status: 'menunggu'
-    },
-    {
-      id: 2,
-      name: 'Siti Aminah',
-      role: 'Peternak',
-      user: { name: 'Siti Aminah', role: { name: 'Peternak' } },
-      phone: '+62813-9876-5432',
-      whatsapp: '+62813-9876-5432',
-      created_at: '2025-11-20T11:15:00Z',
-      request_type: 'Laporan error sistem',
-      detail: 'Laporan error sistem',
-      status: 'diproses'
-    },
-    {
-      id: 3,
-      name: 'Andi Wijaya',
-      role: 'Owner',
-      user: { name: 'Andi Wijaya', role: { name: 'Owner' } },
-      phone: '+62815-2468-1357',
-      whatsapp: '+62815-2468-1357',
-      created_at: '2025-11-19T09:45:00Z',
-      request_type: 'Permintaan akses kandang baru',
-      detail: 'Permintaan akses kandang baru',
-      status: 'selesai'
-    },
-    {
-      id: 4,
-      name: 'Dewi Lestari',
-      role: 'Peternak',
-      user: { name: 'Dewi Lestari', role: { name: 'Peternak' } },
-      phone: '+62817-5555-8888',
-      whatsapp: '+62817-5555-8888',
-      created_at: '2025-11-18T16:20:00Z',
-      request_type: 'Pertanyaan teknis',
-      detail: 'Pertanyaan teknis',
-      status: 'selesai'
-    },
-    {
-      id: 5,
-      name: 'Rudi Hartono',
-      role: 'Guest',
-      user: { name: 'Rudi Hartono', role: { name: 'Guest' } },
-      phone: '+62819-1111-2222',
-      whatsapp: '+62819-1111-2222',
-      created_at: '2025-11-18T10:00:00Z',
-      request_type: 'Masalah login',
-      detail: 'Masalah login',
-      status: 'ditolak'
-    }
-  ]);
+  const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('Terbaru');
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   useEffect(() => {
     fetchRequests();
@@ -86,19 +27,12 @@ const RiwayatLaporan = () => {
 
       if (data && Array.isArray(data)) {
         // Filter out Peternak requests (Peternak cannot submit requests)
-        const filteredData = data
-          .filter(req => req.role !== 'Peternak')
-          .map(req => ({
-            ...req,
-            // Ensure Guest request_type always shows "-"
-            request_type: req.role === 'Guest' ? '-' : req.request_type
-          }));
-
+        const filteredData = data.filter(req => req.role !== 'Peternak');
         setRequests(filteredData);
       }
     } catch (error) {
       const errorMessage = handleError('RiwayatLaporan fetchRequests', error);
-      // Keep mock data (already in state)
+      console.error('Failed to fetch requests:', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -114,13 +48,18 @@ const RiwayatLaporan = () => {
     }
   };
 
+  const handleDetailClick = (request) => {
+    setSelectedRequest(request);
+    setShowDetailModal(true);
+  };
+
   const getStatusColor = (status) => {
     const colors = {
       'pending': 'bg-yellow-100 text-yellow-700',
       'approved': 'bg-green-100 text-green-700',
       'rejected': 'bg-red-100 text-red-700',
     };
-    return colors[status.toLowerCase()] || 'bg-gray-100 text-gray-700';
+    return colors[status?.toLowerCase()] || 'bg-gray-100 text-gray-700';
   };
 
   const getStatusLabel = (status) => {
@@ -129,21 +68,35 @@ const RiwayatLaporan = () => {
       'approved': 'Disetujui',
       'rejected': 'Ditolak'
     };
-    return labels[status.toLowerCase()] || status;
+    return labels[status?.toLowerCase()] || status;
   };
 
-  const formatDateTime = (dateStr) => {
-    if (!dateStr) return '—';
-    const date = new Date(dateStr);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day} ${hours}:${minutes}`;
+  // Get display text for Detail Permintaan column
+  const getRequestTypeDisplay = (request) => {
+    const isGuest = request.role === 'Guest' || request.user_id === 0;
+    
+    if (isGuest) {
+      // For guest, show the problem type from request_content
+      try {
+        const content = JSON.parse(request.request_content);
+        return content.detail_permintaan || content.problem_type || 'Laporan Guest';
+      } catch {
+        // Parse old format
+        const lines = (request.request_content || '').split('\n');
+        for (const line of lines) {
+          if (line.startsWith('Detail Permintaan:')) {
+            return line.replace('Detail Permintaan:', '').trim();
+          }
+        }
+        return 'Laporan Guest';
+      }
+    }
+    
+    // For owner, show request_type (Tambah Kandang / Tambah Peternak)
+    return request.request_type || '-';
   };
 
-  if (loading) {
+  if (loading && requests.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50">
         <NavbarAdmin /><SidebarAdmin />
@@ -174,9 +127,6 @@ const RiwayatLaporan = () => {
           </div>
 
           <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
-            <div className="flex items-center justify-end mb-6">
-            </div>
-
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -202,17 +152,22 @@ const RiwayatLaporan = () => {
                       <tr key={log.request_id || log.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-4 text-sm text-gray-900">{(currentPage - 1) * 5 + index + 1}</td>
                         <td className="px-4 py-4 text-sm font-medium text-gray-900">{log.username || log.sender_name || 'Guest'}</td>
-                        <td className="px-4 py-4 text-sm text-gray-600">{log.role || '—'}</td>
+                        <td className="px-4 py-4 text-sm text-gray-600">{log.role || 'Guest'}</td>
                         <td className="px-4 py-4 text-sm text-gray-600">{log.phone_number || '—'}</td>
-                        <td className="px-4 py-4 text-sm text-gray-600">
-                          {log.sent_time ? formatDateTime(log.sent_time) : (log.created_at ? formatDateTime(log.created_at) : '—')}
+                        <td className="px-4 py-4 text-sm text-gray-600">{log.sent_time || '—'}</td>
+                        <td className="px-4 py-4">
+                          <button
+                            onClick={() => handleDetailClick(log)}
+                            className="text-sm text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                          >
+                            {getRequestTypeDisplay(log)}
+                          </button>
                         </td>
-                        <td className="px-4 py-4 text-sm text-gray-600">{log.request_type || '—'}</td>
                         <td className="px-4 py-4">
                           <select
                             value={log.status || 'pending'}
                             onChange={(e) => handleStatusUpdate(log.request_id || log.id, e.target.value)}
-                            className={`px-3 py-1 rounded-full text-xs font-medium border-0 focus:ring-2 focus:ring-cyan-500 ${getStatusColor(log.status)}`}
+                            className={`px-3 py-1 rounded-full text-xs font-medium border-0 focus:ring-2 focus:ring-cyan-500 cursor-pointer ${getStatusColor(log.status)}`}
                           >
                             <option value="pending">Menunggu</option>
                             <option value="approved">Disetujui</option>
@@ -226,30 +181,58 @@ const RiwayatLaporan = () => {
               </table>
             </div>
 
-            <div className="flex items-center justify-center gap-2 mt-6">
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-              >
-                {currentPage}
-              </button>
-              <button
-                onClick={() => setCurrentPage(p => p + 1)}
-                disabled={requests.length < 5}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-              >
-                {currentPage + 1}
-              </button>
-              <button className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
+            {/* Pagination */}
+            {requests.length > 0 && (
+              <div className="flex items-center justify-center gap-2 mt-6">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                
+                {Array.from({ length: Math.ceil(requests.length / 5) }, (_, i) => i + 1).slice(0, 5).map(page => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      currentPage === page
+                        ? 'bg-blue-500 text-white'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(Math.ceil(requests.length / 5), p + 1))}
+                  disabled={currentPage >= Math.ceil(requests.length / 5)}
+                  className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </main>
+
+      {/* Detail Modal */}
+      {showDetailModal && selectedRequest && (
+        <RequestDetailModal
+          request={selectedRequest}
+          onClose={() => {
+            setShowDetailModal(false);
+            setSelectedRequest(null);
+          }}
+        />
+      )}
     </div>
   );
 };
