@@ -1,5 +1,3 @@
-/* LandingPage.css */
-
 /* Scoped styles for landing page only */
 .landing-page {
   min-height: 100vh;
@@ -7,6 +5,7 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
   color: #333;
   line-height: 1.6;
+  overflow-x: hidden;
 }
 
 .landing-page * {
@@ -15,7 +14,129 @@
   box-sizing: border-box;
 }
 
-/* Header */
+/* ========================================
+   FLOATING ANIMATIONS
+   ======================================== */
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes floatDelayed {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 6px 18px -6px rgba(0, 136, 255, 0.08);
+  }
+  50% {
+    box-shadow: 0 10px 24px -6px rgba(0, 136, 255, 0.12);
+  }
+}
+
+
+/* ========================================
+   SCROLL REVEAL ANIMATIONS
+   ======================================== */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.reveal.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-left {
+  opacity: 0;
+  transform: translateX(-40px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.reveal-left.active {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.reveal-right {
+  opacity: 0;
+  transform: translateX(40px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.reveal-right.active {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Staggered animation delays for cards */
+.stagger-1 { transition-delay: 0.1s; }
+.stagger-2 { transition-delay: 0.2s; }
+.stagger-3 { transition-delay: 0.3s; }
+.stagger-4 { transition-delay: 0.4s; }
+
+/* ========================================
+   HEADER
+   ======================================== */
+
 .header {
   background-color: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -51,7 +172,7 @@
 }
 
 .nav-desktop {
-  display: -webkit-box;
+  display: none;
   gap: 2rem;
 }
 
@@ -63,32 +184,45 @@
   font-size: 1rem;
   transition: color 0.2s;
   text-transform: capitalize;
+  position: relative;
+}
+
+.nav-desktop .nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: #0088FF;
+  transition: width 0.3s ease;
+}
+
+.nav-desktop .nav-link:hover::after {
+  width: 100%;
 }
 
 .nav-desktop .nav-link:hover {
   color: #1d4ed8;
-  font-size: large;
-  transition: 0.1s;
-  font-weight: 500;
 }
 
-
 .btn-login-desktop {
+  display: none;
   border: none;
   background-color: #0088FF;
   color: white;
   padding: 0.5rem 1.5rem;
-  border: none;
   border-radius: 0.5rem;
   cursor: pointer;
   font-weight: 600;
-  display: inline-flex;
   align-items: center;
-  transition: background-color 0.3s;
+  transition: all 0.3s;
 }
 
 .btn-login-desktop:hover {
   background-color: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 136, 255, 0.3);
 }
 
 .mobile-menu-btn {
@@ -137,7 +271,10 @@
   background-color: #1d4ed8;
 }
 
-/* Hero Section */
+/* ========================================
+   HERO SECTION
+   ======================================== */
+
 .hero-section {
   max-width: 1280px;
   margin: 0 auto;
@@ -154,6 +291,7 @@
 
 .hero-content {
   flex: 1;
+  animation: fadeInLeft 1s ease forwards;
 }
 
 .hero-badge {
@@ -180,6 +318,10 @@
   margin-bottom: 1.5rem;
 }
 
+.hero-title .highlight {
+  color: #0088FF;
+}
+
 .hero-subtitle {
   font-size: 1.2rem;
   color: #6b7280;
@@ -188,14 +330,20 @@
 
 .hero-features {
   list-style: none;
-  margin-bottom: 4rem;
+  margin-bottom: 2rem;
 }
 
 .hero-feature-item {
   display: flex;
   align-items: flex-start;
   margin-bottom: 0.75rem;
+  opacity: 0;
+  animation: fadeInUp 0.6s ease forwards;
 }
+
+.hero-feature-item:nth-child(1) { animation-delay: 0.3s; }
+.hero-feature-item:nth-child(2) { animation-delay: 0.5s; }
+.hero-feature-item:nth-child(3) { animation-delay: 0.7s; }
 
 .feature-check {
   color: #059669;
@@ -216,10 +364,29 @@
   display: inline-flex;
   align-items: center;
   transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-cta::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+
+.btn-cta:hover::before {
+  left: 100%;
 }
 
 .btn-cta:hover {
   background-color: #1d4ed8;
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(0, 136, 255, 0.35);
 }
 
 .btn-icon {
@@ -231,16 +398,26 @@
   transform: translateX(0.25rem);
 }
 
+/* ========================================
+   HERO IMAGE WITH FLOATING CARDS
+   ======================================== */
+
 .hero-image-wrapper {
   flex: 1;
   position: relative;
   width: 100%;
+  animation: fadeInRight 1s ease forwards;
 }
 
 .hero-image-container {
   border-radius: 1rem;
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  transition: transform 0.3s ease;
+}
+
+.hero-image-container:hover {
+  transform: scale(1.02);
 }
 
 .hero-image {
@@ -249,28 +426,59 @@
   display: block;
 }
 
-.hero-stat-card {
-  display: none;
+/* Floating Stat Cards */
+.floating-card {
   position: absolute;
-  bottom: -1.5rem;
-  left: -1.5rem;
-  background-color: white;
-  padding: 1.5rem;
+  background: white;
+  padding: 1rem 1.25rem;
   border-radius: 0.75rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
-.stat-number {
-  font-size: 1.875rem;
+.floating-card-survival {
+  bottom: -1rem;
+  left: -1rem;
+  animation: float 4s ease-in-out infinite, pulse 4s ease-in-out infinite;
+}
+
+.floating-card-efficiency {
+  top: -1rem;
+  right: -1rem;
+  animation: floatDelayed 4.5s ease-in-out infinite 0.5s, pulse 4.5s ease-in-out infinite 0.5s;
+}
+
+.floating-card-number {
+  font-size: 1.5rem;
   font-weight: 700;
   color: #0088FF;
+  line-height: 1.2;
 }
 
-.stat-label {
+.floating-card-number.green {
+  color: #16A34A;
+}
+
+.floating-card-label {
+  font-size: 0.875rem;
   color: #6b7280;
+  margin-top: 0.25rem;
 }
 
-/* Section Common Styles */
+/* Hide floating cards on very small screens */
+@media (max-width: 480px) {
+  .floating-card {
+    display: none;
+  }
+}
+
+/* ========================================
+   SECTION COMMON STYLES
+   ======================================== */
+
 .section-container {
   max-width: 1280px;
   margin: 0 auto;
@@ -283,12 +491,36 @@
 }
 
 .section-title {
-  font-size: 3rem;
+  font-size: 2.5rem;
   color: #1A1A1A;
   margin-bottom: 1rem;
+  position: relative;
+  display: inline-block;
 }
 
-/* Fitur Section */
+.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(90deg, #0088FF, #16A34A);
+  border-radius: 2px;
+}
+
+.section-description {
+  color: #6b7280;
+  font-size: 1.1rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* ========================================
+   FITUR SECTION
+   ======================================== */
+
 .section-fitur {
   background-color: white;
   padding: 4rem 0;
@@ -305,12 +537,32 @@
   padding: 2rem;
   border-radius: 0.75rem;
   border: 1px solid #e5e7eb;
-  transition: all 0.3s;
-  
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #0088FF, #16A34A);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s ease;
+}
+
+.feature-card:hover::before {
+  transform: scaleX(1);
 }
 
 .feature-card:hover {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px -10px rgba(0, 136, 255, 0.2);
+  border-color: #0088FF;
 }
 
 .feature-icon {
@@ -319,6 +571,11 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  transition: transform 0.3s ease;
+}
+
+.feature-card:hover .feature-icon {
+  transform: scale(1.1);
 }
 
 .feature-title {
@@ -336,10 +593,26 @@
   text-align: center;
 }
 
-/* Keunggulan Section */
+/* ========================================
+   KEUNGGULAN SECTION
+   ======================================== */
+
 .section-keunggulan {
   background-color: #F0F9FF;
   padding: 4rem 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.section-keunggulan::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(0, 136, 255, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
 }
 
 .keunggulan-grid {
@@ -353,11 +626,27 @@
   padding: 2rem;
   border-radius: 0.75rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  overflow: hidden;
+}
+
+.keunggulan-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0, 136, 255, 0.05) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.keunggulan-card:hover::after {
+  opacity: 1;
 }
 
 .keunggulan-card:hover {
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 25px 50px -12px rgba(0, 136, 255, 0.25);
 }
 
 .keunggulan-icon {
@@ -366,6 +655,13 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
+  z-index: 1;
+  transition: transform 0.3s ease;
+}
+
+.keunggulan-card:hover .keunggulan-icon {
+  transform: rotate(-5deg) scale(1.1);
 }
 
 .keunggulan-title {
@@ -376,17 +672,24 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
+  z-index: 1;
 }
 
 .keunggulan-description {
   color: #6b7280;
   text-align: center;
+  position: relative;
+  z-index: 1;
 }
 
+/* ========================================
+   TESTIMONI SECTION
+   ======================================== */
 
-/* Testimoni Section */
 .section-testimoni {
   padding: 4rem 0;
+  background: white;
 }
 
 .testimoni-grid {
@@ -396,10 +699,28 @@
 }
 
 .testimoni-card {
-  background-color: #d1fae5;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
   border: 1px solid #a7f3d0;
   border-radius: 0.75rem;
   padding: 2rem;
+  transition: all 0.4s ease;
+  position: relative;
+}
+
+.testimoni-card::before {
+  content: '"';
+  position: absolute;
+  top: 1rem;
+  right: 1.5rem;
+  font-size: 4rem;
+  color: rgba(5, 150, 105, 0.15);
+  font-family: Georgia, serif;
+  line-height: 1;
+}
+
+.testimoni-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px -10px rgba(5, 150, 105, 0.25);
 }
 
 .testimoni-header {
@@ -412,7 +733,7 @@
   width: 3rem;
   height: 3rem;
   border-radius: 9999px;
-  background-color: #059669;
+  background: linear-gradient(135deg, #059669 0%, #16a34a 100%);
   color: white;
   display: flex;
   justify-content: center;
@@ -421,6 +742,7 @@
   font-weight: 700;
   margin-right: 1rem;
   flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3);
 }
 
 .testimoni-info {
@@ -446,6 +768,7 @@
   font-style: italic;
   color: #374151;
   margin-bottom: 1rem;
+  line-height: 1.7;
 }
 
 .testimoni-rating {
@@ -454,7 +777,14 @@
   color: #eab308;
 }
 
-/* Harga Section */
+.testimoni-rating svg {
+  filter: drop-shadow(0 1px 2px rgba(234, 179, 8, 0.3));
+}
+
+/* ========================================
+   HARGA SECTION
+   ======================================== */
+
 .section-harga {
   background-color: #F0F9FF;
   padding: 4rem 0;
@@ -474,11 +804,37 @@
   padding: 2rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   position: relative;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow: hidden;
+}
+
+.pricing-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: #16A34A;
+}
+
+.pricing-card.featured::before {
+  background: linear-gradient(90deg, #0088FF, #4F46E5);
+}
+
+.pricing-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
 }
 
 .pricing-card.featured {
   border: 2px solid #0088FF;
   box-shadow: 0 20px 25px -5px rgba(37, 99, 235, 0.2);
+  transform: scale(1.02);
+}
+
+.pricing-card.featured:hover {
+  transform: scale(1.05) translateY(-5px);
 }
 
 .featured-badge {
@@ -486,7 +842,7 @@
   top: -0.75rem;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #0088FF;
+  background: linear-gradient(90deg, #0088FF, #4F46E5);
   color: white;
   padding: 0.25rem 1rem;
   border-radius: 9999px;
@@ -496,6 +852,7 @@
   align-items: center;
   gap: 0.25rem;
   white-space: nowrap;
+  box-shadow: 0 4px 10px rgba(0, 136, 255, 0.3);
 }
 
 .pricing-title {
@@ -519,7 +876,8 @@
   margin-bottom: 1rem;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: baseline;
+  gap: 0.25rem;
 }
 
 .pricing-price {
@@ -543,19 +901,38 @@
   margin-bottom: 1.5rem;
   background-color: #16A34A;
   color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.pricing-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+
+.pricing-btn:hover::before {
+  left: 100%;
 }
 
 .pricing-btn:hover {
   background-color: #15803D;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(22, 163, 74, 0.3);
 }
 
 .pricing-btn.featured {
-  background-color: #0088FF;
+  background: linear-gradient(90deg, #0088FF, #4F46E5);
   color: white;
 }
 
 .pricing-btn.featured:hover {
-  background-color: #1d4ed8;
+  box-shadow: 0 8px 25px rgba(0, 136, 255, 0.4);
 }
 
 .pricing-features {
@@ -566,6 +943,11 @@
   display: flex;
   align-items: flex-start;
   padding: 0.5rem 0;
+  transition: transform 0.2s ease;
+}
+
+.pricing-feature-item:hover {
+  transform: translateX(5px);
 }
 
 .pricing-check {
@@ -575,7 +957,10 @@
   margin-top: 0.25rem;
 }
 
-/* Footer */
+/* ========================================
+   FOOTER
+   ======================================== */
+
 .footer {
   background-color: #0F172A;
   color: #9ca3af;
@@ -627,13 +1012,14 @@
   text-decoration: none;
   display: block;
   padding: 0.25rem 0;
-  transition: color 0.3s;
+  transition: all 0.3s;
   text-align: left;
 }
 
 .footer-links-list button:hover,
 .footer-links-list a:hover {
   color: #0088FF;
+  transform: translateX(5px);
 }
 
 .footer-bottom {
@@ -648,7 +1034,10 @@
   color: #6b7280;
 }
 
-/* Responsive Design */
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
 @media (min-width: 768px) {
   .mobile-menu-btn {
     display: none;
@@ -659,7 +1048,7 @@
   }
 
   .btn-login-desktop {
-    display: block;
+    display: inline-flex;
   }
 
   .hero-title {
@@ -670,8 +1059,18 @@
     flex-direction: row;
   }
 
-  .hero-stat-card {
+  .floating-card {
     display: block;
+  }
+
+  .floating-card-survival {
+    bottom: -1.5rem;
+    left: -2rem;
+  }
+
+  .floating-card-efficiency {
+    top: -1.5rem;
+    right: -2rem;
   }
 
   .feature-grid {
@@ -707,11 +1106,11 @@
     padding: 5rem 0;
   }
 
-  .section-cta {
-    padding: 5rem 0;
+  .section-title {
+    font-size: 3rem;
   }
 
-  .cta-title {
-    font-size: 2.5rem;
+  .floating-card-number {
+    font-size: 1.75rem;
   }
 }

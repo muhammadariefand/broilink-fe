@@ -195,8 +195,13 @@ const RequestModal = ({ onClose }) => {
                       <option disabled>Belum ada peternak</option>
                     ) : (
                       peternaks.map((peternak) => (
-                        <option key={peternak.user_id} value={peternak.user_id}>
+                        <option 
+                          key={peternak.user_id} 
+                          value={peternak.user_id}
+                          disabled={peternak.is_assigned}
+                        >
                           {peternak.name}
+                          {peternak.is_assigned ? ` (sudah di ${peternak.farm_name})` : ''}
                         </option>
                       ))
                     )}

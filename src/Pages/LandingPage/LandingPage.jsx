@@ -1,7 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, X, Check, Star, MonitorCheck, ChartNoAxesColumn, Shield, TrendingUp, Clock, UsersRound } from 'lucide-react';
+import { 
+  Menu, X, Check, Star, MonitorCheck, 
+  ChartNoAxesColumn, Shield, TrendingUp, 
+  Clock, UsersRound, ArrowRight 
+} from 'lucide-react';
 import './LandingPage.css';
+
+// Custom hook for scroll reveal animation
+const useScrollReveal = () => {
+  const ref = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(entry.target);
+        }
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  return [ref, isVisible];
+};
+
+// Reusable reveal wrapper component
+const RevealWrapper = ({ children, className = '', delay = 0 }) => {
+  const [ref, isVisible] = useScrollReveal();
+  
+  return (
+    <div 
+      ref={ref} 
+      className={`reveal ${isVisible ? 'active' : ''} ${className}`}
+      style={{ transitionDelay: `${delay}s` }}
+    >
+      {children}
+    </div>
+  );
+};
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -24,7 +69,9 @@ const LandingPage = () => {
             <div className="logo">
               <img
                 src="src/assets/image/logo-broilink.png"
-                className="logo-icon"/>
+                alt="Broilink"
+                className="logo-icon"
+              />
             </div>
             
             {/* Desktop Navigation */}
@@ -44,13 +91,14 @@ const LandingPage = () => {
               className="btn-login-desktop"
               onClick={() => navigate('/login')}
             >
-              Login
+              Gabung
             </button>
 
             {/* Mobile Menu Button */}
             <button
               className="mobile-menu-btn"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -84,9 +132,9 @@ const LandingPage = () => {
         <section id="beranda" className="hero-section">
           <div className="hero-container">
             <div className="hero-content">
-              
               <h1 className="hero-title">
-                Revolusi Peternakan Ayam dengan Teknologi Cerdas
+                Revolusi Peternakan Ayam dengan{' '}
+                <span className="highlight">Teknologi Cerdas</span>
               </h1>
               
               <p className="hero-subtitle">
@@ -108,16 +156,30 @@ const LandingPage = () => {
 
               <button className="btn-cta">
                 Mulai Gabung Sekarang
+                <ArrowRight className="btn-icon" size={20} />
               </button>
             </div>
 
             <div className="hero-image-wrapper">
+              {/* Floating Card - Survival Rate (Bottom Left) */}
+              <div className="floating-card floating-card-survival">
+                <div className="floating-card-number green">35%</div>
+                <div className="floating-card-label">Tingkat Kelangsungan</div>
+              </div>
+
+              {/* Main Image */}
               <div className="hero-image-container">
                 <img 
-                src="src/assets/image/kandang-ayam-broiler.jpg"
-                alt="Peternakan Ayam Modern Broilink" 
-                className="hero-image" 
-            />
+                  src="src/assets/image/kandang-ayam-broiler.jpg"
+                  alt="Peternakan Ayam Modern Broilink" 
+                  className="hero-image" 
+                />
+              </div>
+
+              {/* Floating Card - Feed Efficiency (Top Right) */}
+              <div className="floating-card floating-card-efficiency">
+                <div className="floating-card-number">+35%</div>
+                <div className="floating-card-label">Efiensi Pakan</div>
               </div>
             </div>
           </div>
@@ -126,12 +188,14 @@ const LandingPage = () => {
         {/* Fitur Section */}
         <section id="fitur" className="section-fitur">
           <div className="section-container">
-            <div className="section-header">
-              <h2 className="section-title">Fitur</h2>
-              <p className="section-description">
-                Teknologi terdepan untuk mengelola ayam broiler dengan efisien dan modern
-              </p>
-            </div>
+            <RevealWrapper>
+              <div className="section-header">
+                <h2 className="section-title">Fitur</h2>
+                <p className="section-description">
+                  Teknologi terdepan untuk mengelola ayam broiler dengan efisien dan modern
+                </p>
+              </div>
+            </RevealWrapper>
 
             <div className="feature-grid">
               {[
@@ -151,11 +215,13 @@ const LandingPage = () => {
                   icon: <Shield size={40} color='#16A34A' /> 
                 }
               ].map((feature, idx) => (
-                <div key={idx} className="feature-card">
-                  <div className="feature-icon">{feature.icon}</div>
-                  <h3 className="feature-title">{feature.title}</h3>
-                  <p className="feature-description">{feature.description}</p>
-                </div>
+                <RevealWrapper key={idx} delay={idx * 0.15}>
+                  <div className="feature-card">
+                    <div className="feature-icon">{feature.icon}</div>
+                    <h3 className="feature-title">{feature.title}</h3>
+                    <p className="feature-description">{feature.description}</p>
+                  </div>
+                </RevealWrapper>
               ))}
             </div>
           </div>
@@ -164,12 +230,14 @@ const LandingPage = () => {
         {/* Keunggulan Section */}
         <section id="keunggulan" className="section-keunggulan">
           <div className="section-container">
-            <div className="section-header">
-              <h2 className="section-title">Keunggulan</h2>
-              <p className="section-description">
-                Mengapa ribuan peternak memilih Broilink sebagai solusi peternakan mereka
-              </p>
-            </div>
+            <RevealWrapper>
+              <div className="section-header">
+                <h2 className="section-title">Keunggulan</h2>
+                <p className="section-description">
+                  Mengapa ribuan peternak memilih Broilink sebagai solusi peternakan mereka
+                </p>
+              </div>
+            </RevealWrapper>
 
             <div className="keunggulan-grid">
               {[
@@ -189,11 +257,13 @@ const LandingPage = () => {
                   icon: <UsersRound size={40} color='#4F46E5' />
                 }
               ].map((item, idx) => (
-                <div key={idx} className="keunggulan-card">
-                  <div className="keunggulan-icon">{item.icon}</div>
-                  <h3 className="keunggulan-title">{item.title}</h3>
-                  <p className="keunggulan-description">{item.description}</p>
-                </div>
+                <RevealWrapper key={idx} delay={idx * 0.15}>
+                  <div className="keunggulan-card">
+                    <div className="keunggulan-icon">{item.icon}</div>
+                    <h3 className="keunggulan-title">{item.title}</h3>
+                    <p className="keunggulan-description">{item.description}</p>
+                  </div>
+                </RevealWrapper>
               ))}
             </div>
           </div>
@@ -202,13 +272,14 @@ const LandingPage = () => {
         {/* Testimoni Section */}
         <section id="testimoni" className="section-testimoni">
           <div className="section-container">
-            <div className="section-header">
-                
-              <h2 className="section-title">Testimoni</h2>
-              <p className="section-description">
-                Dengarkan pengalaman nyata dari peternak yang telah merasakan manfaat Broilink
-              </p>
-            </div>
+            <RevealWrapper>
+              <div className="section-header">
+                <h2 className="section-title">Testimoni</h2>
+                <p className="section-description">
+                  Dengarkan pengalaman nyata dari peternak yang telah merasakan manfaat Broilink
+                </p>
+              </div>
+            </RevealWrapper>
 
             <div className="testimoni-grid">
               {[
@@ -225,24 +296,26 @@ const LandingPage = () => {
                   text: 'Keren banget platformnya! Supportnya cepat tanggap, dan fitur analisis data bener-bener ngebantu kami optimalkan pakan sekaligus ngurangin biaya operasional sampai 25%. Worth it banget!'
                 }
               ].map((testimonial, idx) => (
-                <div key={idx} className="testimoni-card">
-                  <div className="testimoni-header">
-                    <div className="testimoni-avatar">
-                      {testimonial.name.charAt(0)}
+                <RevealWrapper key={idx} delay={idx * 0.2}>
+                  <div className="testimoni-card">
+                    <div className="testimoni-header">
+                      <div className="testimoni-avatar">
+                        {testimonial.name.charAt(0)}
+                      </div>
+                      <div className="testimoni-info">
+                        <div className="testimoni-name">{testimonial.name}</div>
+                        <div className="testimoni-role">{testimonial.role}</div>
+                        <div className="testimoni-location">{testimonial.location}</div>
+                      </div>
                     </div>
-                    <div className="testimoni-info">
-                      <div className="testimoni-name">{testimonial.name}</div>
-                      <div className="testimoni-role">{testimonial.role}</div>
-                      <div className="testimoni-location">{testimonial.location}</div>
+                    <p className="testimoni-text">"{testimonial.text}"</p>
+                    <div className="testimoni-rating">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} size={16} fill="currentColor" />
+                      ))}
                     </div>
                   </div>
-                  <p className="testimoni-text">"{testimonial.text}"</p>
-                  <div className="testimoni-rating">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} size={16} fill="currentColor" />
-                    ))}
-                  </div>
-                </div>
+                </RevealWrapper>
               ))}
             </div>
           </div>
@@ -251,9 +324,14 @@ const LandingPage = () => {
         {/* Harga Section */}
         <section id="harga" className="section-harga">
           <div className="section-container">
-            <div className="section-header">
-              <h2 className="section-title">Harga</h2>
-            </div>
+            <RevealWrapper>
+              <div className="section-header">
+                <h2 className="section-title">Harga</h2>
+                <p className="section-description">
+                  Pilih paket yang sesuai dengan kebutuhan peternakan Anda
+                </p>
+              </div>
+            </RevealWrapper>
 
             <div className="pricing-grid">
               {[
@@ -287,38 +365,37 @@ const LandingPage = () => {
                   featured: true
                 }
               ].map((plan, idx) => (
-                <div
-                  key={idx}
-                  className={`pricing-card ${plan.featured ? 'featured' : ''}`}
-                >
-                  {plan.featured && (
-                    <div className="featured-badge">
-                      <Star size={15} fill="currentColor" />
-                      Paling Populer
+                <RevealWrapper key={idx} delay={idx * 0.2}>
+                  <div className={`pricing-card ${plan.featured ? 'featured' : ''}`}>
+                    {plan.featured && (
+                      <div className="featured-badge">
+                        <Star size={15} fill="currentColor" />
+                        Paling Populer
+                      </div>
+                    )}
+                    
+                    <h3 className="pricing-title">{plan.title}</h3>
+                    <p className="pricing-subtitle">{plan.subtitle}</p>
+                    
+                    <div className="pricing-price-wrapper">
+                      <span className="pricing-price">{plan.price}</span>
+                      <span className="pricing-period">{plan.period}</span>
                     </div>
-                  )}
-                  
-                  <h3 className="pricing-title">{plan.title}</h3>
-                  <p className="pricing-subtitle">{plan.subtitle}</p>
-                  
-                  <div className="pricing-price-wrapper">
-                    <span className="pricing-price">{plan.price}</span>
-                    <span className="pricing-period">{plan.period}</span>
+
+                    <button className={`pricing-btn ${plan.featured ? 'featured' : ''}`}>
+                      Mulai Sekarang
+                    </button>
+
+                    <ul className="pricing-features">
+                      {plan.features.map((feature, fIdx) => (
+                        <li key={fIdx} className="pricing-feature-item">
+                          <Check className="pricing-check" size={18} />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-
-                  <button className={`pricing-btn ${plan.featured ? 'featured' : ''}`}>
-                    Mulai Sekarang
-                  </button>
-
-                  <ul className="pricing-features">
-                    {plan.features.map((feature, fIdx) => (
-                      <li key={fIdx} className="pricing-feature-item">
-                        <Check className="pricing-check" size={18} />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                </RevealWrapper>
               ))}
             </div>
           </div>
@@ -326,16 +403,17 @@ const LandingPage = () => {
       </main>
 
       {/* Footer */}
-      <footer className="footer">
+      <footer id="kontak" className="footer">
         <div className="footer-container">
           <div className="footer-grid">
             <div className="footer-brand">
               <div className="logo">
                 <img
-                src="src/assets/image/logo-broilink.png"
-                className="logo-icon"/>
+                  src="src/assets/image/logo-broilink.png"
+                  alt="Broilink"
+                  className="logo-icon"
+                />
               </div>
-
               <p className="footer-brand-text">
                 Solusi peternakan ayam broiler terdepan dengan teknologi IoT dan AI untuk hasil optimal.
               </p>

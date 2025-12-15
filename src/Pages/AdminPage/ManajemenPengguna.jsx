@@ -225,7 +225,8 @@ const ManajemenPengguna = () => {
           payload.email = formData.email;
         } else {
           payload.role_id = 3;
-          payload.email = formData.email || `${formData.username}@broilink.com`; // Default email for peternak
+          payload.email = formData.email || `${formData.username}@broilink.com`;
+          payload.owner_id = formData.owner_id; // Link peternak to owner
         }
 
         const response = await adminService.createUser(payload);

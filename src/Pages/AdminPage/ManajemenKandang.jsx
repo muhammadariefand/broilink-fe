@@ -230,8 +230,15 @@ const ManajemenKandang = () => {
                   >
                     <option value="">-- Pilih Peternak --</option>
                     {peternaks.map((peternak) => (
-                      <option key={peternak.user_id} value={peternak.user_id}>
+                      <option 
+                        key={peternak.user_id} 
+                        value={peternak.user_id}
+                        disabled={peternak.is_assigned && peternak.farm_id != selectedFarmId}
+                      >
                         {peternak.name}
+                        {peternak.is_assigned && peternak.farm_id != selectedFarmId 
+                          ? ` (sudah di ${peternak.farm_name})` 
+                          : ''}
                       </option>
                     ))}
                   </select>

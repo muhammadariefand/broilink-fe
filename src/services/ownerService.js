@@ -73,6 +73,13 @@ const ownerService = {
   },
 
   /**
+   * Get peternaks assigned to owner's farms
+   */
+  getPeternaks: () => {
+    return axiosInstance.get('/owner/peternaks');
+  },
+
+  /**
    * Submit request
    */
   submitRequest: (data) => {
