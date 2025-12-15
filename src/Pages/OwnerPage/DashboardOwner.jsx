@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ownerService from '../../services/ownerService';
 import { handleError } from '../../utils/errorHandler';
@@ -7,9 +7,9 @@ import RequestModal from '../../components/RequestModal';
 const Dashboard = () => {
   const navigate = useNavigate();
   const [selectedFilter, setSelectedFilter] = useState('Mortalitas');
-  const [selectedFilter2, setSelectedFilter2] = useState('Tidak Ada');
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isLoadingChart, setIsLoadingChart] = useState(false);
   const [apiError, setApiError] = useState(null);
 
   const [farms, setFarms] = useState([]);
@@ -28,39 +28,95 @@ const Dashboard = () => {
     { time: '07.30', activity: 'Update Indikator', detail: 'Suhu: 35,1°C', status: 'Bahaya' }
   ]);
 
+  // Chart data: 6 bars with 4h interval
   const [chartData, setChartData] = useState([
-    { time: '00:00', value: 3 },
-    { time: '06:00', value: 5 },
-    { time: '12:00', value: 2 },
-    { time: '18:00', value: 4 },
+    { time: '00:00', value: 0 },
+    { time: '04:00', value: 0 },
+    { time: '08:00', value: 0 },
+    { time: '12:00', value: 0 },
+    { time: '16:00', value: 0 },
+    { time: '20:00', value: 0 },
   ]);
+
+  // Calculate dynamic Y-axis based on max value and parameter type
+  const yAxisConfig = useMemo(() => {
+    const maxValue = Math.max(...chartData.map(d => d.value), 0);
+    const isMortalitas = selectedFilter === 'Mortalitas';
+    
+    // If all values are 0, use default ceiling
+    if (maxValue === 0) {
+      return { 
+        max: isMortalitas ? 10 : 100, 
+        ticks: isMortalitas ? [10, 8, 6, 4, 2, 0] : [100, 75, 50, 25, 0] 
+      };
+    }
+    
+    // Round up to nice number
+    let ceiling;
+    if (maxValue <= 5) ceiling = isMortalitas ? 5 : 10;
+    else if (maxValue <= 10) ceiling = 10;
+    else if (maxValue <= 20) ceiling = 20;
+    else if (maxValue <= 50) ceiling = 50;
+    else if (maxValue <= 100) ceiling = 100;
+    else if (maxValue <= 200) ceiling = 200;
+    else if (maxValue <= 500) ceiling = 500;
+    else if (maxValue <= 1000) ceiling = 1000;
+    else ceiling = Math.ceil(maxValue / 500) * 500;
+
+    // Generate 5 tick marks (including 0)
+    let ticks;
+    if (isMortalitas) {
+      // For mortalitas: always use integers
+      const step = Math.ceil(ceiling / 4);
+      ticks = [ceiling, step * 3, step * 2, step, 0];
+    } else {
+      // For other parameters: can have decimals
+      ticks = [ceiling, ceiling * 0.75, ceiling * 0.5, ceiling * 0.25, 0];
+    }
+    
+    return { max: ceiling, ticks };
+  }, [chartData, selectedFilter]);
+
+  // Get Y-axis unit label
+  const getYAxisLabel = () => {
+    switch (selectedFilter) {
+      case 'Mortalitas': return 'Ekor';
+      case 'Bobot': return 'Gram';
+      case 'Pakan': return 'Kg';
+      case 'Minum': return 'Liter';
+      default: return '';
+    }
+  };
+
+  // Format tick value (integer for mortalitas)
+  const formatTick = (value) => {
+    if (selectedFilter === 'Mortalitas') {
+      return Math.round(value);
+    }
+    return Number.isInteger(value) ? value : value.toFixed(1);
+  };
 
   useEffect(() => {
     fetchDashboardData();
-  }, [selectedFilter, selectedFilter2, selectedFarmId]);
+  }, []);
+
+  useEffect(() => {
+    if (selectedFarmId) {
+      fetchChartData(selectedFarmId);
+    }
+  }, [selectedFilter, selectedFarmId]);
 
   const fetchDashboardData = async () => {
     setIsLoadingData(true);
     setApiError(null);
 
-    console.log('=== DASHBOARD OWNER: Starting data fetch ===');
-    console.log('Token:', localStorage.getItem('token') ? 'EXISTS' : 'MISSING');
-    console.log('User:', localStorage.getItem('user'));
-    console.log('Selected Filter:', selectedFilter);
-
     try {
-      console.log('Calling ownerService.getDashboard()...');
       const response = await ownerService.getDashboard();
-
-      console.log('✅ API Response received:', response);
-      console.log('Response data:', response.data);
-
       const data = response.data.data || response.data;
 
       if (data.farms && data.farms.length > 0) {
         setFarms(data.farms);
 
-        // Use selected farm or first farm
         const farmToDisplay = selectedFarmId
           ? data.farms.find(f => f.farm_id === selectedFarmId)
           : data.farms[0];
@@ -70,28 +126,15 @@ const Dashboard = () => {
         }
 
         if (farmToDisplay) {
-          const dashboardData = {
+          setFarmData({
             name: farmToDisplay.farm_name || 'Kandang A',
             status: farmToDisplay.status || 'normal',
             temp: farmToDisplay.temperature ? `${Math.round(farmToDisplay.temperature)}°C` : '-'
-          };
-
-          console.log('🏠 Dashboard Farm Data:', {
-            farmId: farmToDisplay.farm_id,
-            farmName: dashboardData.name,
-            status: dashboardData.status,
-            temperature: farmToDisplay.temperature,
-            rawData: farmToDisplay
           });
-
-          setFarmData(dashboardData);
           await fetchChartData(farmToDisplay.farm_id);
         }
-      } else {
-        console.warn('⚠️ No farms data in API response');
       }
 
-      // API returns 'activities' not 'recent_reports'
       if (data.activities && data.activities.length > 0) {
         const acts = data.activities.map(activity => ({
           time: activity.time || '-',
@@ -99,30 +142,21 @@ const Dashboard = () => {
           detail: activity.message || '-',
           status: activity.type === 'sensor' ? 'Normal' : 'Info'
         }));
-        console.log('✅ Setting activities from API:', acts);
         setActivities(acts);
-      } else {
-        console.warn('⚠️ No activities in API response, using mock data');
       }
 
       setIsLoadingData(false);
     } catch (error) {
       const errorMessage = handleError('DashboardOwner fetchData', error);
-      console.error('❌ API ERROR:', errorMessage);
-      console.error('Error details:', error);
-      console.error('Error response:', error.response);
-
       setApiError(errorMessage);
       setIsLoadingData(false);
-
-      // Mock data already in state - will be displayed as fallback
-      console.log('📊 Using mock data as fallback');
     }
   };
 
   const fetchChartData = async (farmId) => {
     try {
-      // Map selectedFilter to API field
+      setIsLoadingChart(true);
+      
       const filterMapping = {
         'Mortalitas': 'mortality',
         'Bobot': 'avg_weight',
@@ -136,46 +170,37 @@ const Dashboard = () => {
       const response = await ownerService.getAnalytics(farmId, '1day');
       const data = response.data.data || response.data;
 
-      console.log('📊 Chart Data from API:', {
+      console.log('📊 Chart API Response:', {
         dataField,
-        totalPoints: data.labels?.length,
+        labels: data.labels,
         values: data[dataField],
-        labels: data.labels
+        rawData: data
       });
 
-      // New API format: { labels: [...], feed: [...], water: [...], avg_weight: [...], mortality: [...] }
       if (data.labels && data[dataField]) {
-        // ✅ FIX: Use ALL data points, not just 4 samples
-        // Convert all points to chart format
-        const allChartData = data.labels.map((label, i) => ({
+        // Use all 6 data points from API
+        const newChartData = data.labels.map((label, i) => ({
           time: label || '00:00',
           value: parseFloat(data[dataField][i]) || 0
         }));
 
-        // Filter out null/zero values if all data is zero
-        const hasNonZeroData = allChartData.some(d => d.value > 0);
-
-        if (!hasNonZeroData) {
-          console.warn('⚠️ All chart values are 0. Data might be empty.');
-        }
-
-        // ✅ Take last 4 points (most recent data) instead of evenly spaced
-        const recentData = allChartData.slice(-4);
-
-        console.log('📈 Chart Data (last 4 points):', recentData);
-        setChartData(recentData);
+        console.log('📈 Processed Chart Data:', newChartData);
+        setChartData(newChartData);
       } else {
-        console.warn('⚠️ No chart data available for field:', dataField);
+        // Default empty data
         setChartData([
           { time: '00:00', value: 0 },
-          { time: '06:00', value: 0 },
+          { time: '04:00', value: 0 },
+          { time: '08:00', value: 0 },
           { time: '12:00', value: 0 },
-          { time: '18:00', value: 0 }
+          { time: '16:00', value: 0 },
+          { time: '20:00', value: 0 },
         ]);
       }
     } catch (error) {
       console.error('❌ Failed to fetch chart data:', error);
-      // Keep mock data on error
+    } finally {
+      setIsLoadingChart(false);
     }
   };
 
@@ -199,6 +224,16 @@ const Dashboard = () => {
     }
   };
 
+  const getBarColor = () => {
+    switch (selectedFilter) {
+      case 'Mortalitas': return 'from-red-500 to-red-400';
+      case 'Bobot': return 'from-green-500 to-green-400';
+      case 'Pakan': return 'from-orange-500 to-orange-400';
+      case 'Minum': return 'from-blue-500 to-blue-400';
+      default: return 'from-gray-500 to-gray-400';
+    }
+  };
+
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
       {/* Error Alert */}
@@ -211,7 +246,7 @@ const Dashboard = () => {
             <div className="flex-1">
               <h3 className="text-sm font-semibold text-red-800">Gagal Memuat Data dari Backend</h3>
               <p className="text-sm text-red-700 mt-1">{apiError}</p>
-              <p className="text-xs text-red-600 mt-2">📊 Menampilkan data mock sebagai fallback. Periksa console untuk detail error.</p>
+              <p className="text-xs text-red-600 mt-2">📊 Menampilkan data mock sebagai fallback.</p>
             </div>
           </div>
         </div>
@@ -269,86 +304,103 @@ const Dashboard = () => {
 
         {/* Analisis Laporan Card */}
         <div className="bg-white rounded-2xl p-6 shadow-sm">
-    <div className="mb-4">
-        <h2 className="text-lg text-center font-semibold text-gray-900 mb-3">Analisis Laporan (Terbaru)</h2>
-        <div className="grid grid-cols-2 gap-3">
-            <div>
+          <div className="mb-4">
+            <h2 className="text-lg text-center font-semibold text-gray-900 mb-3">Analisis Laporan (Terbaru)</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
                 <select
-                    className="w-full px-3 py-1.5 border border-gray-400 rounded-lg text-xs cursor-pointer focus:ring-blue-500 focus:border-blue-500 focus:outline-none mb-2"
-                    value={selectedFarmId || ''}
-                    onChange={(e) => setSelectedFarmId(Number(e.target.value))}
+                  className="w-full px-3 py-1.5 border border-gray-400 rounded-lg text-xs cursor-pointer focus:ring-blue-500 focus:border-blue-500 focus:outline-none mb-2"
+                  value={selectedFarmId || ''}
+                  onChange={(e) => setSelectedFarmId(Number(e.target.value))}
                 >
-                    {farms.map(farm => (
-                      <option key={farm.farm_id} value={farm.farm_id}>{farm.farm_name}</option>
-                    ))}
+                  {farms.map(farm => (
+                    <option key={farm.farm_id} value={farm.farm_id}>{farm.farm_name}</option>
+                  ))}
                 </select>
                 <select
-                    className="w-fit px-3 py-1.5 border border-gray-400 rounded-lg text-xs cursor-pointer focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                    value={selectedFilter}
-                    onChange={(e) => setSelectedFilter(e.target.value)}
+                  className="w-fit px-3 py-1.5 border border-gray-400 rounded-lg text-xs cursor-pointer focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                  value={selectedFilter}
+                  onChange={(e) => setSelectedFilter(e.target.value)}
                 >
-                    <option>Mortalitas</option>
-                    <option>Bobot</option>
-                    <option>Pakan</option>
-                    <option>Minum</option>
+                  <option>Mortalitas</option>
+                  <option>Bobot</option>
+                  <option>Pakan</option>
+                  <option>Minum</option>
                 </select>
+              </div>
             </div>
-        </div>
-    </div>
+          </div>
 
-    <div className="flex gap-1 pb-10 h-60">
-        <div className="flex gap-1 items-center pb-2">
-            <span className="text-base text-gray-800 font-medium transform -rotate-90 whitespace-nowrap">
-                {selectedFilter === 'Mortalitas' ? 'Ekor' :
-                selectedFilter === 'Bobot' ? 'Gram' :
-                selectedFilter === 'Pakan' ? 'Kg' :
-                'Liter'}
-            </span>
-        </div>
+          {/* Chart Container */}
+          <div className="flex gap-1 pb-10 h-56">
+            {/* Y-Axis Label */}
+            <div className="flex items-center pb-2">
+              <span className="text-sm text-gray-800 font-medium transform -rotate-90 whitespace-nowrap">
+                {getYAxisLabel()}
+              </span>
+            </div>
 
-        {/* Y Axis (Angka 0, 2, 4, 6) */}
-        <div className="flex flex-col justify-between text-sm text-gray-600 pt-2 pr-2"> 
-             {/* Tambahkan pr-2 untuk memberi sedikit jarak dari label 'Ekor' */}
-            <span>6</span>
-            <span>4</span>
-            <span>2</span>
-            <span>0</span>
-        </div>
-        
-        {/* Chart Area */}
-        <div className="flex-1 flex flex-col">
-          <div className="flex-1 flex items-end gap-10 pl-2 border-l-2 border-b-2 border-gray-500 relative">
-              {/* Bar Chart Mapping (Tidak Diubah) */}
-              {chartData.map((data, index) => {
-                const barColor =  selectedFilter === 'Mortalitas' ? 'from-red-500 to-red-400' :
-                                  selectedFilter === 'Bobot' ? 'from-green-500 to-green-400' :
-                                  selectedFilter === 'Pakan' ? 'from-orange-500 to-orange-400' :
-                                  'from-blue-500 to-blue-400';
-
-                    return (
-                        <div key={index} className="flex-1 flex flex-col items-center gap-2">
-                            <div
-                                className={`w-full bg-gradient-to-t ${barColor} rounded-t min-h-[20px] flex items-start justify-center pt-1`}
-                                style={{ height: `${(data.value / 6) * 100}%` }}
-                            >
-                                <span className="text-xs font-semibold text-white">{data.value}</span>
-                            </div>
-                            <span className="absolute top-full mt-1">{data.time}</span>
-                        </div>
-                    );
-                })}
+            {/* Y-Axis Ticks */}
+            <div className="flex flex-col justify-between text-xs text-gray-600 pt-1 pr-1 w-12 text-right">
+              {yAxisConfig.ticks.map((tick, i) => (
+                <span key={i}>{formatTick(tick)}</span>
+              ))}
             </div>
             
-            {/* X Axis Label ("Jam") */}
-            <div className="w-full h-0.5 relative"> 
-              <div className="text-center text-base text-gray-800 font-medium absolute left-1/2 transform -translate-x-1/2 top-full mt-6">
+            {/* Chart Area */}
+            <div className="flex-1 flex flex-col">
+              <div className="flex-1 flex items-end gap-1 pl-2 border-l-2 border-b-2 border-gray-400 relative">
+                {isLoadingChart ? (
+                  <div className="flex-1 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  </div>
+                ) : (
+                  chartData.map((data, index) => {
+                    // Calculate height percentage based on yAxisConfig.max
+                    const heightPercent = yAxisConfig.max > 0 
+                      ? Math.min((data.value / yAxisConfig.max) * 100, 100)
+                      : 0;
+                    
+                    // Minimum height for visibility when value > 0
+                    const minHeight = data.value > 0 ? 8 : 0;
+                    const finalHeight = Math.max(heightPercent, minHeight);
+                    
+                    return (
+                      <div key={index} className="flex-1 flex flex-col items-center justify-end h-full">
+                        <div
+                          className={`w-full max-w-[40px] bg-gradient-to-t ${getBarColor()} rounded-t flex items-start justify-center pt-1 transition-all duration-300`}
+                          style={{ 
+                            height: `${finalHeight}%`,
+                            minHeight: data.value > 0 ? '24px' : '20px'
+                          }}
+                        >
+                          <span className="text-[10px] font-semibold text-white">
+                            {selectedFilter === 'Mortalitas' ? Math.round(data.value) : data.value}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+              
+              {/* X-Axis Labels */}
+              <div className="flex gap-1 pl-2 pt-1">
+                {chartData.map((data, index) => (
+                  <div key={index} className="flex-1 text-center">
+                    <span className="text-[10px] text-gray-600">{data.time}</span>
+                  </div>
+                ))}
+              </div>
+              
+              {/* X-Axis Title */}
+              <div className="text-center text-sm text-gray-800 font-medium mt-2">
                 Jam
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
       {/* Aktivitas Peternakan Card */}
       <div className="bg-white rounded-2xl p-6 shadow-sm">
@@ -367,7 +419,12 @@ const Dashboard = () => {
                 <tr
                   key={index}
                   className={`border-t border-gray-100 transition-colors ${activity.status === 'Info' ? 'hover:bg-blue-50 cursor-pointer' : 'hover:bg-gray-50'}`}
-                  onClick={() => activity.status === 'Info' && navigate('/analytics')}
+                  onClick={() => {
+                    // Navigate to owner analytics page when clicking Info status
+                    if (activity.status === 'Info') {
+                      navigate('/owner/analytics');
+                    }
+                  }}
                 >
                   <td className="px-4 py-4 text-gray-600 text-sm">{activity.time}</td>
                   <td className="px-4 py-4">
