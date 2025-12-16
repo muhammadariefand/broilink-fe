@@ -130,13 +130,13 @@ const DiagramAnalisis = () => {
 
         // Process Data 1
         const field1 = dataFieldMap[filters.data1] || 'feed';
-        const data1Values = (aggregateData[field1] || []).map(v => v !== null ? v : 0);
+        const data1Values = (aggregateData[field1] || []).map(v => v !== null ? Math.round(v) : 0);
         setChartData1(data1Values);
 
         // Process Data 2
         if (filters.data2 !== 'Tidak Ada') {
           const field2 = dataFieldMap[filters.data2] || 'feed';
-          const data2Values = (aggregateData[field2] || []).map(v => v !== null ? v : 0);
+          const data2Values = (aggregateData[field2] || []).map(v => v !== null ? Math.round(v) : 0);
           setChartData2(data2Values);
         } else {
           setChartData2([]);
