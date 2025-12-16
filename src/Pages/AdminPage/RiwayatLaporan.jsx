@@ -26,9 +26,7 @@ const RiwayatLaporan = () => {
       const data = response.data.data || response.data;
 
       if (data && Array.isArray(data)) {
-        // Filter out Peternak requests (Peternak cannot submit requests)
-        const filteredData = data.filter(req => req.role !== 'Peternak');
-        setRequests(filteredData);
+      setRequests(data);
       }
     } catch (error) {
       const errorMessage = handleError('RiwayatLaporan fetchRequests', error);

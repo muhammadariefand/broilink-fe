@@ -3,251 +3,96 @@ import React from 'react';
 const RequestDetailModal = ({ request, onClose }) => {
   if (!request) return null;
 
-  // Parse request_content JSON
   let parsedContent = null;
-  try {
-    parsedContent = JSON.parse(request.request_content);
-  } catch (e) {
-    // If not JSON, use raw content
-    parsedContent = null;
-  }
+  try { parsedContent = JSON.parse(request.request_content); } catch { parsedContent = null; }
 
   const isGuest = request.role === 'Guest' || request.user_id === 0;
-  const isOwner = request.role === 'Owner';
-  const isTambahKandang = request.request_type === 'Tambah Kandang' || parsedContent?.type === 'tambah_kandang';
-  const isTambahPeternak = request.request_type === 'Tambah Peternak' || parsedContent?.type === 'tambah_peternak';
+  const isLupaPassword = request.request_type === 'Lupa Password';
+  const isTambahKandang = request.request_type === 'Tambah Kandang';
+  const isTambahPeternak = request.request_type === 'Tambah Peternak';
 
-  // Extract data based on request type
-  const getGuestData = () => {
-    if (parsedContent) {
-      return {
-        email: parsedContent.email || '-',
-        whatsapp: parsedContent.nomor_whatsapp || parsedContent.whatsapp || request.phone_number || '-',
-        detail: parsedContent.detail_permintaan || parsedContent.problem_type || '-'
-      };
-    }
-    // Parse from old format "Email: xxx\nNomor WhatsApp: xxx\nDetail Permintaan: xxx"
-    const lines = (request.request_content || '').split('\n');
-    const data = {};
-    lines.forEach(line => {
-      if (line.startsWith('Email:')) data.email = line.replace('Email:', '').trim();
-      if (line.startsWith('Nomor WhatsApp:')) data.whatsapp = line.replace('Nomor WhatsApp:', '').trim();
-      if (line.startsWith('Detail Permintaan:')) data.detail = line.replace('Detail Permintaan:', '').trim();
-    });
-    return {
-      email: data.email || '-',
-      whatsapp: data.whatsapp || request.phone_number || '-',
-      detail: data.detail || '-'
-    };
-  };
+  const getStatusColor = (s) => ({ 'pending': 'bg-yellow-100 text-yellow-700', 'approved': 'bg-green-100 text-green-700', 'rejected': 'bg-red-100 text-red-700' }[s?.toLowerCase()] || 'bg-gray-100 text-gray-700');
+  const getStatusLabel = (s) => ({ 'pending': 'Menunggu', 'approved': 'Disetujui', 'rejected': 'Ditolak' }[s?.toLowerCase()] || s);
 
-  const getTambahKandangData = () => {
-    if (parsedContent) {
-      return {
-        nama_kandang: parsedContent.nama_kandang || parsedContent.farm_name || '-',
-        lokasi: parsedContent.lokasi_kandang || parsedContent.location || '-',
-        kapasitas: parsedContent.kapasitas_kandang || parsedContent.farm_area || '-',
-        peternak: parsedContent.peternak_name || '-'
-      };
-    }
-    return {
-      nama_kandang: '-',
-      lokasi: '-',
-      kapasitas: '-',
-      peternak: '-'
-    };
-  };
-
-  const getTambahPeternakData = () => {
-    if (parsedContent) {
-      return {
-        nama: parsedContent.nama_lengkap || parsedContent.name || '-',
-        whatsapp: parsedContent.nomor_whatsapp || parsedContent.phone_number || '-',
-        email: parsedContent.email || '-'
-      };
-    }
-    return {
-      nama: '-',
-      whatsapp: '-',
-      email: '-'
-    };
-  };
-
-  const getStatusColor = (status) => {
-    const colors = {
-      'pending': 'bg-yellow-100 text-yellow-700',
-      'approved': 'bg-green-100 text-green-700',
-      'rejected': 'bg-red-100 text-red-700',
-    };
-    return colors[status?.toLowerCase()] || 'bg-gray-100 text-gray-700';
-  };
-
-  const getStatusLabel = (status) => {
-    const labels = {
-      'pending': 'Menunggu',
-      'approved': 'Disetujui',
-      'rejected': 'Ditolak'
-    };
-    return labels[status?.toLowerCase()] || status;
-  };
+  const Field = ({ label, value }) => (
+    <div className="flex justify-between py-1.5 border-b border-gray-100 last:border-0">
+      <span className="text-xs text-gray-500">{label}</span>
+      <span className="text-sm text-gray-900 text-right">{value || '-'}</span>
+    </div>
+  );
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-xl p-6 w-[450px] max-w-[90vw] shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg font-semibold text-gray-900">Detail Permintaan</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white rounded-xl p-5 w-[380px] max-w-[90vw] shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-semibold text-gray-900">Detail Permintaan</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        {/* Request Info Header */}
-        <div className="bg-gray-50 rounded-lg p-4 mb-5">
+        <div className="bg-gray-50 rounded-lg p-3 mb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-500">Pengirim</span>
-            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
-              {getStatusLabel(request.status)}
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-              <span className="text-blue-600 font-medium">
-                {(request.sender_name || request.username || 'G')[0].toUpperCase()}
-              </span>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <span className="text-blue-600 font-medium text-sm">{(request.sender_name || 'G')[0].toUpperCase()}</span>
+              </div>
+              <div>
+                <p className="font-medium text-gray-900 text-sm">{request.sender_name || 'Guest'}</p>
+                <p className="text-xs text-gray-500">{request.role || 'Guest'}</p>
+              </div>
             </div>
-            <div>
-              <p className="font-medium text-gray-900">{request.sender_name || request.username || 'Guest'}</p>
-              <p className="text-sm text-gray-500">{request.role || 'Guest'}</p>
-            </div>
+            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>{getStatusLabel(request.status)}</span>
           </div>
-          <div className="mt-3 pt-3 border-t border-gray-200">
-            <p className="text-xs text-gray-500">Waktu pengajuan</p>
-            <p className="text-sm text-gray-700">{request.sent_time || '-'}</p>
-          </div>
+          <p className="text-xs text-gray-500 mt-2">{request.sent_time || '-'}</p>
         </div>
 
-        {/* Content based on type */}
-        <div className="space-y-4">
+        <div className="space-y-1">
+          <h4 className="font-medium text-gray-900 text-sm mb-2">
+            {isLupaPassword ? 'Lupa Password' : isGuest ? 'Laporan Guest' : isTambahKandang ? 'Tambah Kandang' : isTambahPeternak ? 'Tambah Peternak' : request.request_type}
+          </h4>
+
+          {isLupaPassword && parsedContent && (
+            <>
+              <Field label="Email" value={parsedContent.email} />
+              <Field label="WhatsApp" value={parsedContent.phone_number} />
+              <Field label="Role" value={parsedContent.role} />
+            </>
+          )}
+
           {isGuest && (
             <>
-              <h4 className="font-medium text-gray-900 mb-3">Laporan Guest</h4>
-              {(() => {
-                const data = getGuestData();
-                return (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-xs text-gray-500 block mb-1">Email</label>
-                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">{data.email}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500 block mb-1">Nomor WhatsApp</label>
-                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">{data.whatsapp}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500 block mb-1">Detail Permasalahan</label>
-                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">{data.detail}</p>
-                    </div>
-                  </div>
-                );
-              })()}
+              <Field label="Email" value={parsedContent?.email} />
+              <Field label="WhatsApp" value={parsedContent?.nomor_whatsapp || request.phone_number} />
+              <Field label="Detail" value={parsedContent?.detail_permintaan || parsedContent?.problem_type} />
             </>
           )}
 
-          {isOwner && isTambahKandang && (
+          {isTambahKandang && parsedContent && (
             <>
-              <h4 className="font-medium text-gray-900 mb-3">Permintaan Tambah Kandang</h4>
-              {(() => {
-                const data = getTambahKandangData();
-                return (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-xs text-gray-500 block mb-1">Nama Kandang</label>
-                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">{data.nama_kandang}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500 block mb-1">Lokasi Kandang</label>
-                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">{data.lokasi}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500 block mb-1">Kapasitas Kandang</label>
-                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">{data.kapasitas} ekor</p>
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500 block mb-1">Peternak yang Mengurusi</label>
-                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">{data.peternak}</p>
-                    </div>
-                  </div>
-                );
-              })()}
+              <Field label="Nama Kandang" value={parsedContent.nama_kandang} />
+              <Field label="Lokasi" value={parsedContent.lokasi_kandang} />
+              <Field label="Kapasitas" value={parsedContent.kapasitas_kandang ? `${parsedContent.kapasitas_kandang} ekor` : '-'} />
+              <Field label="Peternak" value={parsedContent.peternak_name} />
             </>
           )}
 
-          {isOwner && isTambahPeternak && (
+          {isTambahPeternak && parsedContent && (
             <>
-              <h4 className="font-medium text-gray-900 mb-3">Permintaan Tambah Peternak</h4>
-              {(() => {
-                const data = getTambahPeternakData();
-                return (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-xs text-gray-500 block mb-1">Nama Lengkap</label>
-                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">{data.nama}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500 block mb-1">Nomor WhatsApp</label>
-                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">{data.whatsapp}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500 block mb-1">Email</label>
-                      <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">{data.email}</p>
-                    </div>
-                  </div>
-                );
-              })()}
+              <Field label="Nama" value={parsedContent.nama_lengkap} />
+              <Field label="WhatsApp" value={parsedContent.nomor_whatsapp} />
+              <Field label="Email" value={parsedContent.email} />
             </>
           )}
 
-          {/* Fallback for other request types (like Lupa Password from user) */}
-          {!isGuest && !isTambahKandang && !isTambahPeternak && (
-            <>
-              <h4 className="font-medium text-gray-900 mb-3">{request.request_type || 'Permintaan'}</h4>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs text-gray-500 block mb-1">Nomor WhatsApp</label>
-                  <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">{request.phone_number || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 block mb-1">Detail</label>
-                  <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-lg whitespace-pre-wrap">
-                    {request.request_content || '-'}
-                  </p>
-                </div>
-              </div>
-            </>
+          {!isLupaPassword && !isGuest && !isTambahKandang && !isTambahPeternak && (
+            <Field label="Detail" value={request.request_content} />
           )}
         </div>
 
-        {/* Close Button */}
-        <div className="mt-6">
-          <button
-            onClick={onClose}
-            className="w-full px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-          >
-            Tutup
-          </button>
-        </div>
+        <button onClick={onClose} className="w-full mt-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200">Tutup</button>
       </div>
     </div>
   );
