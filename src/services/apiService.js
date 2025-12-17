@@ -35,11 +35,26 @@ const apiService = {
       const response = await fetch(`${API_URL}${endpoint}`, config);
       
       if (!response.ok) {
-        if (response.status === 401) {
+        // --- PERBAIKAN DI SINI ---
+        // Hanya redirect jika 401 DAN bukan sedang mencoba login
+        if (response.status === 401 && endpoint !== '/login') {
           this.removeAuthToken();
           window.location.href = '/login';
+          return; // Stop eksekusi biar tidak lanjut throw error di bawah
         }
-        throw new Error(`HTTP error! status: ${response.status}`);
+
+        // Kita coba ambil pesan error dari backend (JSON)
+        const errorData = await response.json().catch(() => ({}));
+
+        // Kita buat Error Object yang membawa info response
+        // Supaya di Login.jsx bisa terbaca: err.response.status
+        const error = new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        error.response = {
+            status: response.status,
+            data: errorData
+        };
+        
+        throw error;
       }
 
       return await response.json();
@@ -90,11 +105,20 @@ const apiService = {
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
+        // Sama, lindungi upload juga (walau jarang login pakai upload)
+        if (response.status === 401 && endpoint !== '/login') {
           this.removeAuthToken();
           window.location.href = '/login';
+          return;
         }
-        throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const errorData = await response.json().catch(() => ({}));
+        const error = new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        error.response = {
+            status: response.status,
+            data: errorData
+        };
+        throw error;
       }
 
       return await response.json();
@@ -115,7 +139,13 @@ const apiService = {
     },
 
     async logout() {
-      await apiService.post('/logout');
+      // Logout backend (opsional, tergantung implementasi sanctum)
+      try {
+        await apiService.post('/logout');
+      } catch (e) {
+        console.warn("Logout backend failed/already token invalid", e);
+      }
+      // Hapus token lokal
       apiService.removeAuthToken();
     },
 
@@ -233,7 +263,7 @@ const apiService = {
     },
   },
 
-  // Aggregated monitoring endpoints (accessible by all authenticated roles)
+  // Aggregated monitoring endpoints
   monitoring: {
     async aggregate(params) {
       const query = new URLSearchParams(params).toString();
@@ -241,7 +271,7 @@ const apiService = {
     },
   },
 
-  // Aggregated analysis endpoints (accessible by all authenticated roles)
+  // Aggregated analysis endpoints
   analysis: {
     async aggregate(params) {
       const query = new URLSearchParams(params).toString();
@@ -249,7 +279,7 @@ const apiService = {
     },
   },
 
-  // TODO: Add methods for Peternak endpoints
+  // Peternak endpoints
   peternak: {
     async getDashboard() {
       return apiService.get('/peternak/dashboard');
