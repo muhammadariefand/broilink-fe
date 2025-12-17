@@ -3,6 +3,8 @@ import { Line } from 'react-chartjs-2';
 import { Thermometer, Droplet, Wind, Home, Bell } from "lucide-react";
 import peternakService from '../../services/peternakService';
 import { handleError } from '../../utils/errorHandler';
+import axios from 'axios'; // <--- TAMBAHAN: Kita pakai axios langsung buat fitur ini
+
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -30,6 +32,28 @@ export default function DashboardPeternak() {
     bobot: { labels: [], data: [], color: '#10B981', unit: 'Gram' },
     kematian: { labels: [], data: [], color: '#EF4444', unit: 'Ekor' }
   });
+
+  // --- FUNGSI BARU: HUBUNGKAN TELEGRAM ---
+  const connectTelegram = async () => {
+    try {
+      // Ambil token auth dari localStorage (sesuaikan jika kamu simpan dengan nama lain)
+      const token = localStorage.getItem('token'); 
+
+      // Panggil API Backend (Sesuaikan Base URL jika perlu, misal: http://localhost:8000/api/...)
+      const response = await axios.get('http://localhost:8000/api/peternak/telegram-link', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data.success) {
+        // Buka Link Telegram di Tab Baru
+        window.open(response.data.url, '_blank');
+      }
+    } catch (error) {
+      console.error("Gagal koneksi Telegram:", error);
+      alert("Gagal mengambil link. Pastikan server nyala dan Anda sudah login.");
+    }
+  };
+  // ---------------------------------------
 
   useEffect(() => { fetchDashboardData(); }, []);
 
@@ -157,11 +181,15 @@ export default function DashboardPeternak() {
         </div>
       )}
 
+      {/* TOMBOL YANG SUDAH DIUPDATE */}
       <div className="flex justify-end mt-6">
-        <a href="https://t.me/Broilink_bot" target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-2 bg-blue-500 text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-blue-600">
-          <Bell size={20} /><span>Aktifkan Notifikasi</span>
-        </a>
+        <button 
+          onClick={connectTelegram}
+          className="flex items-center gap-2 bg-blue-500 text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-blue-600 transition"
+        >
+          <Bell size={20} />
+          <span>Aktifkan Notifikasi</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
